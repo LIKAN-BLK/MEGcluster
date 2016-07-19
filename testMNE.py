@@ -22,8 +22,7 @@ events = mne.read_events(event_fname)
 channel = 'MEG 1332'  # include only this channel in analysis
 include = [channel]
 
-picks = mne.pick_types(raw.info, meg=False, eog=True, include=include,
-                       exclude='bads')
+picks = mne.pick_types(raw.info, meg= 'grad', eog=True, exclude='bads')
 event_id = 1
 reject = dict(grad=4000e-13, eog=150e-6)
 epochs1 = mne.Epochs(raw, events, event_id, tmin, tmax, picks=picks,
