@@ -4,7 +4,6 @@ import re
 from os import listdir
 from os.path import join
 
-
 def load_data(path):
     return np.concatenate([extract_grad_mat(join(path,f)) for f in listdir(path) if f.endswith(".mat")],axis=0)
 
