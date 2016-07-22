@@ -12,7 +12,7 @@ def load_data(path):
 def extract_grad_mat(path):
     data=loadmat(path)
     gradiom_mask = parse_labels(data['label'])
-    return (data['avg'][gradiom_mask])[np.newaxis,...] #additional dimesnion for easier concatenation to 3d array in the future
+    return np.transpose(data['avg'][gradiom_mask])[np.newaxis,...] #additional dimension for easier concatenation to 3d array in the future
 
 
 def parse_labels(array_to_parse):
