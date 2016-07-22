@@ -41,14 +41,14 @@ if __name__ == '__main__':
     X = [condition1, condition2]
     X = [np.transpose(x, (0, 2, 1)) for x in X]
 
-    connectivity = read_ch_connectivity('D:\\BCI\\MEGcluster\\neuromag306planar_neighb.mat', picks=None)
+    connectivity = read_ch_connectivity('neuromag306planar_neighb.mat', picks=None)
 
     # threshold = 6.0
     threshold = None
 
     T_obs, clusters, cluster_p_values, H0 = \
         permutation_cluster_test(X, n_permutations=1000,
-                                 threshold=threshold, connectivity=connectivity[0], tail=1, n_jobs=8)
+                                 threshold=threshold, connectivity=connectivity[0], tail=0, n_jobs=8)
 
 
     times = epochs1.times

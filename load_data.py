@@ -20,5 +20,5 @@ def parse_labels(array_to_parse):
 
 
 if __name__== '__main__':
-    data = load_data("E:\\em_06_SI")
+    data = load_data('..\\meg_data\\em_06_SI')
     print('It\'s fun!')
