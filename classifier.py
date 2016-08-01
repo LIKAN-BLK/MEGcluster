@@ -15,32 +15,32 @@ class My_Classifier:
             return data
 
     def fit(self,X,y):
-        def _calc_cluster_mask(self,target_data, nontarget_data):
+        def _calc_cluster_mask(target_data, nontarget_data):
             X = [target_data, nontarget_data]
             T_obs, clusters, cluster_p_values, H0 = \
                 permutation_cluster_test(X, n_permutations=1000, connectivity=self.connectivity[0], check_disjoint=True, tail=0,
-                                 n_jobs=4)
+                                 n_jobs=8)
             return clusters[np.argmin(cluster_p_values)]
 
 
         clf=LinearDiscriminantAnalysis(solver='eigen',shrinkage='auto')
         self.cluster_mask = _calc_cluster_mask(X[y == 1,:,:], X[y == 0,:,:])
 
-        X = self._apply_cluster_mask(self,X)
+        X = self._apply_cluster_mask(X)
         n_comp = min([200,X.shape[0],X.shape[1]])
         self.pca = PCA(n_components=n_comp)
         self.pca.fit(X)
         X = self.pca.transform(X)
 
-        self.clf=LinearDiscriminantAnalysis(solver='eigen',shrinkage='auto')
+        self.clf=LinearDiscriminantAnalysis()
         self.clf.fit(X,y)
 
     def predict(self,X):
-        X = self._apply_cluster_mask(self,X)
+        X = self._apply_cluster_mask(X)
         X = self.pca.transform(X)
         return self.clf.predict(X)
     def predict_proba(self,X):
-        X = self._apply_cluster_mask(self,X)
+        X = self._apply_cluster_mask(X)
         X = self.pca.transform(X)
         return self.clf.predict_proba(X)
 

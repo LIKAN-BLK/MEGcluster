@@ -1,7 +1,7 @@
 from load_data import load_data
 from os.path import join
 import numpy as np
-from sklearn.cross_validation import cross_val_score
+from sklearn import cross_validation
 from sklearn.metrics import roc_auc_score
 from classifier import My_Classifier
 
@@ -19,13 +19,26 @@ def cv_score(target_data,nontarget_data):
     X = np.concatenate((target_data,nontarget_data),axis=0)
     y = np.hstack((np.ones(target_data.shape[0]),np.zeros(nontarget_data.shape[0])))
     my_clf = My_Classifier()
+    cv = cross_validation.ShuffleSplit(len(y),n_iter=2,test_size=0.2)
+    auc=[]
+    for train_index,test_index in cv:
+        Xtrain = X[train_index, :,:]
+        ytrain = y[train_index]
 
-    scorer = lambda estimator, X, y: roc_auc_score(y,my_clf.predict_proba(X))
-    cross_val_score(estimator=my_clf,X=X,y=y,scoring=scorer,cv=2)
+        Xtest = X[test_index,:,:]
+        ytest = y[test_index]
+
+        my_clf.fit(Xtrain,ytrain)
+        ypred = my_clf.predict_proba(Xtest)[:,1]
+        fold_auc=roc_auc_score(ytest, ypred, average='macro')
+        print('Mean AUC = %f\n' % (fold_auc))
+        auc.append(fold_auc)
+    return sum(auc)/float(len(auc))
+
 
 
 if __name__=='__main__':
-    path = '../meg_data/'
+    path = '..\\meg_data\\'
     target_data, nontarget_data = get_data(path)
-    cv_score(target_data,nontarget_data)
-
+    auc = cv_score(target_data,nontarget_data)
+    print('Mean AUC = %f\n' % (auc))
