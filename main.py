@@ -8,6 +8,8 @@ from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn import cross_validation
 from sklearn.metrics import roc_auc_score
+from multiprocessing import Pool, TimeoutError
+
 
 
 def get_data(path):
@@ -33,39 +35,42 @@ def apply_cluster_mask(data,mask):
 
 
 
+def cv_fold(Xtrain,Xtest,ytrain,ytest,clf):
+
+
+    cluster_mask = calc_cluster_mask(Xtrain[ytrain == 1,:,:], Xtrain[ytrain == 0,:,:])
+    Xtrain = apply_cluster_mask(Xtrain, cluster_mask)
+
+    pca = PCA(n_components = min([200,Xtrain.shape[1]]))
+    Xtrain = pca.fit_transform(Xtrain)
+    print('Real num components = %d' %(Xtrain.shape[1]))
+
+    Xtest = apply_cluster_mask(Xtest, cluster_mask)
+    Xtest = pca.transform(Xtest)
+
+    clf.fit(Xtrain,ytrain)
+    return roc_auc_score(ytest, clf.predict_proba(Xtest)[:,1], average='macro')
+
+def fold_helper(args):
+    return cv_fold(*args)
+
 def cv_score(target_data,nontarget_data):
 
 
     clf=LinearDiscriminantAnalysis(solver='eigen',shrinkage='auto')
     X=np.concatenate((target_data,nontarget_data),axis=0)
     y=np.concatenate([np.ones(target_data.shape[0]),np.zeros(target_data.shape[0])])
-    cv = cross_validation.ShuffleSplit(len(y),n_iter=2,test_size=0.5)
+    cv = cross_validation.ShuffleSplit(len(y),n_iter=2,test_size=0.2)
     acc = []
     auc = []
-    for train_index,test_index in cv:
-        Xtrain = X[train_index, :,:]
-        ytrain = y[train_index]
 
-        Xtest = X[test_index,:]
-        ytest = y[test_index]
+    arg_list = [(X[train_index, :,:],X[test_index, :,:],y[train_index],y[test_index],clf) for train_index,test_index in cv]
 
-        cluster_mask = calc_cluster_mask(Xtrain[ytrain == 1,:,:], Xtrain[ytrain == 0,:,:])
-        Xtrain = apply_cluster_mask(Xtrain, cluster_mask)
-
-
-        pca = PCA(n_components = min([200,Xtrain.shape[1]]))
-        Xtrain = pca.fit_transform(Xtrain)
-        print('Real num components = %d' %(Xtrain.shape[1]))
-
-        clf.fit(Xtrain,ytrain)
-
-        Xtest = apply_cluster_mask(Xtest, cluster_mask)
-        Xtest = pca.transform(Xtest)
-        acc.append(clf.score(Xtest,ytest))
-        auc.append(roc_auc_score(ytest, clf.predict_proba(Xtest)[:,1], average='macro'))
-
-    print np.array(acc).mean()
+    pool = Pool(processes=2)
+    auc = pool.map(fold_helper, arg_list)
     print np.array(auc).mean()
+
+
 
 
 if __name__=='__main__':
