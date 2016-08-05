@@ -23,7 +23,7 @@ def calc_cluster_mask(target_data, nontarget_data):
     X = [target_data, nontarget_data]
     T_obs, clusters, cluster_p_values, H0 = \
         permutation_cluster_test(X, n_permutations=1000, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                 n_jobs=6,verbose=False)
+                                 n_jobs=6,verbose=True)
     return clusters[np.argmin(cluster_p_values)]
 
 def apply_cluster_mask(data,mask):
@@ -61,15 +61,17 @@ def cv_score(target_data,nontarget_data):
         Xtrain = apply_cluster_mask(Xtrain, cluster_mask)
 
 
-        pca = PCA(n_components = min([200,Xtrain.shape[1]]))
-        Xtrain = pca.fit_transform(Xtrain)
+        pca = PCA(whiten =True)
+        pca.fit(Xtrain)
+        effective_pca_num = sum(pca.explained_variance_ratio_>5e-3)
+        Xtrain = pca.transform(Xtrain)[:,:effective_pca_num]
         print('Real num components = %d' %(Xtrain.shape[1]))
 
         fit_clf = lambda clf: clf.fit(Xtrain,ytrain)
         {fit_clf(v) for k,v in clf_dict.items()}
 
         Xtest = apply_cluster_mask(Xtest, cluster_mask)
-        Xtest = pca.transform(Xtest)
+        Xtest = pca.transform(Xtest)[:,:effective_pca_num]
 
         calc_auc = lambda clf:roc_auc_score(ytest, clf.predict_proba(Xtest)[:,1], average='macro')
         auc_dict = {k:np.append(v,calc_auc(clf_dict[k])) for k,v in auc_dict.items()}
