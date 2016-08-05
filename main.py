@@ -23,7 +23,7 @@ def calc_cluster_mask(target_data, nontarget_data):
     X = [target_data, nontarget_data]
     T_obs, clusters, cluster_p_values, H0 = \
         permutation_cluster_test(X, n_permutations=1000, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                 n_jobs=6)
+                                 n_jobs=6,verbose=False)
     return clusters[np.argmin(cluster_p_values)]
 
 def apply_cluster_mask(data,mask):
@@ -54,7 +54,7 @@ def cv_score(target_data,nontarget_data):
         Xtrain = X[train_index, :,:]
         ytrain = y[train_index]
 
-        Xtest = X[test_index,:]
+        Xtest = X[test_index,:,:]
         ytest = y[test_index]
 
         cluster_mask = calc_cluster_mask(Xtrain[ytrain == 1,:,:], Xtrain[ytrain == 0,:,:])
