@@ -1,7 +1,6 @@
 from load_data import load_data
 from mne.channels import read_ch_connectivity
 from mne.stats import permutation_cluster_test
-import matplotlib.pyplot as plt
 from os.path import join
 import numpy as np
 from sklearn.decomposition import PCA
@@ -23,9 +22,11 @@ def calc_cluster_mask(target_data, nontarget_data):
     X = [target_data, nontarget_data]
     T_obs, clusters, cluster_p_values, H0 = \
         permutation_cluster_test(X, n_permutations=1000, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                 n_jobs=6)
-    return clusters[np.argmin(cluster_p_values)]
-
+                                 n_jobs=8,verbose=False)
+    if any(cluster_p_values < 0.05):
+    	return clusters[np.argmin(cluster_p_values)]
+    else:
+	return None	
 def apply_cluster_mask(data,mask):
     #due to geometry troubles returns data in 2d shape (trials x features)
     linear_mask = mask.reshape(mask.shape[0]*mask.shape[1])
@@ -49,16 +50,21 @@ def cv_score(target_data,nontarget_data):
 
     X=np.concatenate((target_data,nontarget_data),axis=0)
     y=np.concatenate([np.ones(target_data.shape[0]),np.zeros(target_data.shape[0])])
-    cv = cross_validation.ShuffleSplit(len(y),n_iter=2,test_size=0.5)
-    for train_index,test_index in cv:
-        Xtrain = X[train_index, :,:]
+    cv = cross_validation.ShuffleSplit(len(y),n_iter=5,test_size=0.2)
+    for num_fold,(train_index,test_index) in enumerate(cv):
+        print('Fold number %d\n' %(num_fold))
+	Xtrain = X[train_index, :,:]
         ytrain = y[train_index]
 
-        Xtest = X[test_index,:]
+        Xtest = X[test_index,:,:]
         ytest = y[test_index]
 
         cluster_mask = calc_cluster_mask(Xtrain[ytrain == 1,:,:], Xtrain[ytrain == 0,:,:])
-        Xtrain = apply_cluster_mask(Xtrain, cluster_mask)
+        if (cluster_mask == None):
+		print('Can\'t find any significant clusters\n')
+		continue
+
+	Xtrain = apply_cluster_mask(Xtrain, cluster_mask)
 
 
         pca = PCA(n_components = min([200,Xtrain.shape[1]]))
