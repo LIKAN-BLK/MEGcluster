@@ -53,7 +53,7 @@ def cv_score(target_data,nontarget_data):
     cv = cross_validation.ShuffleSplit(len(y),n_iter=5,test_size=0.2)
     for num_fold,(train_index,test_index) in enumerate(cv):
         print('Fold number %d\n' %(num_fold))
-	Xtrain = X[train_index, :,:]
+        Xtrain = X[train_index, :,:]
         ytrain = y[train_index]
 
         Xtest = X[test_index,:,:]
@@ -61,10 +61,10 @@ def cv_score(target_data,nontarget_data):
 
         cluster_mask = calc_cluster_mask(Xtrain[ytrain == 1,:,:], Xtrain[ytrain == 0,:,:])
         if (cluster_mask == None):
-		print('Can\'t find any significant clusters\n')
-		continue
+            print('Can\'t find any significant clusters\n')
+            continue
 
-	Xtrain = apply_cluster_mask(Xtrain, cluster_mask)
+        Xtrain = apply_cluster_mask(Xtrain, cluster_mask)
 
 
         pca = PCA(n_components = min([200,Xtrain.shape[1]]))
