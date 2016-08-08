@@ -2,6 +2,8 @@ from load_data import load_data
 from os.path import join
 import numpy as np
 from sklearn import cross_validation
+from mne.channels import read_ch_connectivity
+from mne.stats import permutation_cluster_test
 
 
 import my_pipeline
@@ -19,13 +21,20 @@ def get_data(path):
     nontarget_data = load_data(path_to_nontarget)
     return target_data, nontarget_data
 
-
+def calc_cluster_mask(X,y):
+        connectivity = read_ch_connectivity('neuromag306planar_neighb.mat', picks=None)
+        data = [X[y == 1,:,:], X[y == 0,:,:]]
+        T_obs, clusters, cluster_p_values, H0 = \
+                permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
+                                 n_jobs=8)
+        if any(cluster_p_values < 0.05):
+            return clusters[np.argmin(cluster_p_values)]
+        else:
+            return None
 
 
 def cv_score(target_data,nontarget_data):
     #Cluster methods (now one correct and one empty)
-    cluster = my_pipeline.Cluster_test()
-    no_cluster = my_pipeline.Empy_cluster_test() #Use OR not to use clasterisation
 
     # Pool of dimension reduction methods
     pca = PCA(n_components = 60)
@@ -41,18 +50,20 @@ def cv_score(target_data,nontarget_data):
     C0_5_rbf_svm = SVC(C=0.5,kernel='rbf',gamma='auto',probability=True)
 
 
-    cluster_dict = {'Cluster':cluster,'No_cluster':no_cluster}
     dim_red_dict = {'PCA':pca,'LPP':lpp}
     clf_dict = \
         {'eigen_lda':eigen_lda,'lsqr_lda':lsqr_lda,'svd_lda':svd_lda,'C1_lin_svm':C1_lin_svm,'C1_rbf_svm':C1_rbf_svm,'C0_5_lin_svm':C0_5_lin_svm,'C0_5_rbf_svm':C0_5_rbf_svm}
 
-    my_clf_list = []
-    pipe_objects = itertools.product(cluster_dict.values(),dim_red_dict.values(),clf_dict.values(),auc_dict.values())
-    pipe_names = itertools.product(cluster_dict.keys(),dim_red_dict.keys(),clf_dict.keys(),auc_dict.keys())
-    aucs=[]
+
+    pipe_objects = itertools.product(dim_red_dict.values(),clf_dict.values())
+    pipe_names = itertools.product(dim_red_dict.keys(),clf_dict.keys())
+    cluster_aucs={}
+    no_cluster_aucs={}
+    my_clf_list=[]
     for name,object in zip(pipe_names,pipe_objects):
-        aucs[name] = []
-        my_clf_list.append(my_pipeline.My_pipeline(name,object))
+        cluster_aucs[name] = np.array([])
+        no_cluster_aucs[name] = np.array([])
+        my_clf_list.append(my_pipeline.My_pipeline(name,object[0],object[1]))
 
     X = np.concatenate((target_data,nontarget_data),axis=0)
     y = np.hstack((np.ones(target_data.shape[0]),np.zeros(nontarget_data.shape[0])))
@@ -60,20 +71,43 @@ def cv_score(target_data,nontarget_data):
     cv = cross_validation.ShuffleSplit(len(y),n_iter=2,test_size=0.2)
 
 
-    for train_index,test_index in cv:
+    for num_fold,(train_index,test_index) in enumerate(cv):
+        print('Fold number %d\n' %(num_fold))
         Xtrain = X[train_index, :,:]
         ytrain = y[train_index]
 
         Xtest = X[test_index,:,:]
         ytest = y[test_index]
+        cluster_mask = calc_cluster_mask(Xtrain,ytrain)
 
+        if cluster_mask != None:
+            {v.fit(cluster_mask,Xtrain,ytrain) for v in my_clf_list}
 
-        # fit_clf = lambda clf: clf.fit(Xtrain,ytrain)
-        {v.fit(Xtrain,ytrain) for v in my_clf_list}
+            for v in my_clf_list:
+                tmp_auc = v.score(Xtest,ytest)
+                print('CLUSTER,dim_reduction=%s,classification=%s, AUC = %f' \
+                      %(v.name[0],v.name[1], tmp_auc))
+                np.append(cluster_aucs[v.name],tmp_auc)
+        else:
+            print('Can not find meaningful cluster')
+
+        {v.fit(np.ones(Xtrain.shape),Xtrain,ytrain) for v in my_clf_list}
 
         for v in my_clf_list:
-            print
-            v.score(Xtest,ytest)
+            tmp_auc = v.score(Xtest,ytest)
+            print('NO_CLUSTER,dim_reduction=%s,classification=%s, AUC = %f' \
+                  %(v.name[0],v.name[1], tmp_auc))
+            np.append(no_cluster_aucs[v.name],tmp_auc)
+
+    print('Final results')
+    for k,v in cluster_aucs.items():
+        print('CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
+                  %(v.name[0],v.name[1], tmp_auc.mean()))
+
+    for k,v in no_cluster_aucs.items():
+        print('NOCLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
+                  %(v.name[0],v.name[1], tmp_auc.mean()))
+
 
 
 
