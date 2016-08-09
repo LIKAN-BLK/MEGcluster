@@ -26,7 +26,7 @@ def calc_cluster_mask(X,y):
         data = [X[y == 1,:,:], X[y == 0,:,:]]
         T_obs, clusters, cluster_p_values, H0 = \
                 permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                 n_jobs=8)
+                                 n_jobs=8,verbose=False)
         if any(cluster_p_values < 0.05):
             return clusters[np.argmin(cluster_p_values)]
         else:
@@ -102,11 +102,11 @@ def cv_score(target_data,nontarget_data):
     print('Final results')
     for k,v in cluster_aucs.items():
         print('CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
-                  %(v.name[0],v.name[1], tmp_auc.mean()))
+                  %(k[0],k[1], tmp_auc.mean()))
 
     for k,v in no_cluster_aucs.items():
         print('NOCLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
-                  %(v.name[0],v.name[1], tmp_auc.mean()))
+                  %(k[0],k[1], tmp_auc.mean()))
 
 
 
