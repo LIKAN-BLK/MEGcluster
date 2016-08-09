@@ -8,7 +8,7 @@ from mne.stats import permutation_cluster_test
 
 import my_pipeline
 from sklearn.decomposition import PCA
-from lpproj import LocalityPreservingProjection
+# from lpproj import LocalityPreservingProjection
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.svm import SVC
@@ -37,8 +37,8 @@ def cv_score(target_data,nontarget_data):
     #Cluster methods (now one correct and one empty)
 
     # Pool of dimension reduction methods
-    pca = PCA(n_components = 60)
-    lpp = LocalityPreservingProjection(n_components=30)
+    pca = PCA(n_components = 80)
+    # lpp = LocalityPreservingProjection(n_components=30)
 
     # Pool of classifier methods
     eigen_lda=LinearDiscriminantAnalysis(solver='eigen',shrinkage='auto')
@@ -50,7 +50,7 @@ def cv_score(target_data,nontarget_data):
     C0_5_rbf_svm = SVC(C=0.5,kernel='rbf',gamma='auto',probability=True)
 
 
-    dim_red_dict = {'PCA':pca,'LPP':lpp}
+    dim_red_dict = {'PCA':pca}
     clf_dict = \
         {'eigen_lda':eigen_lda,'lsqr_lda':lsqr_lda,'svd_lda':svd_lda,'C1_lin_svm':C1_lin_svm,'C1_rbf_svm':C1_rbf_svm,'C0_5_lin_svm':C0_5_lin_svm,'C0_5_rbf_svm':C0_5_rbf_svm}
 
