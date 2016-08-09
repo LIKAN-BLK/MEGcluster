@@ -91,7 +91,7 @@ def cv_score(target_data,nontarget_data):
         else:
             print('Can not find meaningful cluster')
 
-        {v.fit(np.ones(Xtrain.shape),Xtrain,ytrain) for v in my_clf_list}
+        {v.fit(np.ones(Xtrain.shape[1:]),Xtrain,ytrain) for v in my_clf_list}
 
         for v in my_clf_list:
             tmp_auc = v.score(Xtest,ytest)
