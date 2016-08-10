@@ -37,7 +37,7 @@ def cv_score(target_data,nontarget_data):
     #Cluster methods (now one correct and one empty)
 
     # Pool of dimension reduction methods
-    pca = PCA(n_components = 80)
+    pca = PCA(n_components = 60, whiten=True)
     # lpp = LocalityPreservingProjection(n_components=30)
 
     # Pool of classifier methods
