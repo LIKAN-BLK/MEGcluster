@@ -68,7 +68,7 @@ def cv_score(target_data,nontarget_data):
     X = np.concatenate((target_data,nontarget_data),axis=0)
     y = np.hstack((np.ones(target_data.shape[0]),np.zeros(nontarget_data.shape[0])))
 
-    cv = cross_validation.ShuffleSplit(len(y),n_iter=2,test_size=0.2)
+    cv = cross_validation.ShuffleSplit(len(y),n_iter=5,test_size=0.2)
 
 
     for num_fold,(train_index,test_index) in enumerate(cv):
@@ -87,7 +87,7 @@ def cv_score(target_data,nontarget_data):
                 tmp_auc = v.score(Xtest,ytest)
                 print('CLUSTER,dim_reduction=%s,classification=%s, AUC = %f' \
                       %(v.name[0],v.name[1], tmp_auc))
-                np.append(cluster_aucs[v.name],tmp_auc)
+                cluster_aucs[v.name] = np.append(cluster_aucs[v.name],tmp_auc)
         else:
             print('Can not find meaningful cluster')
 
@@ -97,16 +97,16 @@ def cv_score(target_data,nontarget_data):
             tmp_auc = v.score(Xtest,ytest)
             print('NO_CLUSTER,dim_reduction=%s,classification=%s, AUC = %f' \
                   %(v.name[0],v.name[1], tmp_auc))
-            np.append(no_cluster_aucs[v.name],tmp_auc)
+            no_cluster_aucs[v.name] = np.append(no_cluster_aucs[v.name],tmp_auc)
 
     print('Final results')
     for k,v in cluster_aucs.items():
         print('CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
-                  %(k[0],k[1], tmp_auc.mean()))
+                  %(k[0],k[1], v.mean()))
 
     for k,v in no_cluster_aucs.items():
         print('NOCLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
-                  %(k[0],k[1], tmp_auc.mean()))
+                  %(k[0],k[1], v.mean()))
 
 
 
