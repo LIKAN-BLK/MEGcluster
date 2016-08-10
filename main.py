@@ -112,7 +112,6 @@ def cv_score(target_data,nontarget_data):
 
 
 if __name__=='__main__':
-    path = '..\\meg_data\\'
+    path = join('..', 'meg_data')
     target_data, nontarget_data = get_data(path)
-    auc = cv_score(target_data,nontarget_data)
-    print('Mean AUC = %f\n' % (auc))
+    cv_score(target_data,nontarget_data)
