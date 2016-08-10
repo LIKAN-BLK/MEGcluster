@@ -27,7 +27,7 @@ def calc_cluster_mask(X,y):
         T_obs, clusters, cluster_p_values, H0 = \
                 permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
                                  n_jobs=8,verbose=False)
-        if any(cluster_p_values < 0.05):
+        if any(cluster_p_values < 0.1):
             return clusters[np.argmin(cluster_p_values)]
         else:
             return None
@@ -81,7 +81,7 @@ def cv_score(target_data,nontarget_data):
         cluster_mask = calc_cluster_mask(Xtrain,ytrain)
 
         if cluster_mask != None:
-            {v.fit(cluster_mask,Xtrain,ytrain) for v in my_clf_list}
+            [v.fit(cluster_mask,Xtrain,ytrain) for v in my_clf_list]
 
             for v in my_clf_list:
                 tmp_auc = v.score(Xtest,ytest)
@@ -91,7 +91,7 @@ def cv_score(target_data,nontarget_data):
         else:
             print('Can not find meaningful cluster')
 
-        {v.fit(np.ones(Xtrain.shape[1:]),Xtrain,ytrain) for v in my_clf_list}
+        [v.fit(np.ones(Xtrain.shape[1:]),Xtrain,ytrain) for v in my_clf_list]
 
         for v in my_clf_list:
             tmp_auc = v.score(Xtest,ytest)
