@@ -82,12 +82,6 @@ def cv_score(target_data,nontarget_data):
         Xtest = X[test_index,:,:]
         ytest = y[test_index]
         cluster_mask = calc_cluster_mask(Xtrain,ytrain)
-
-        scaler = preprocessing.StandardScaler().fit(Xtrain)
-
-
-        Xtrain = scaler.transform(Xtrain)
-        Xtest = scaler.transform(Xtest)
         if cluster_mask != None:
             [v.fit(cluster_mask,Xtrain,ytrain) for v in my_clf_list]
 
