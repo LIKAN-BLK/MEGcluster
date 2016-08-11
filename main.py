@@ -4,6 +4,7 @@ import numpy as np
 from sklearn import cross_validation
 from mne.channels import read_ch_connectivity
 from mne.stats import permutation_cluster_test
+from sklearn import preprocessing
 
 
 import my_pipeline
@@ -37,7 +38,7 @@ def cv_score(target_data,nontarget_data):
     #Cluster methods (now one correct and one empty)
 
     # Pool of dimension reduction methods
-    pca = PCA(n_components = 60, whiten=True)
+    pca = PCA(n_components = 60)
     # lpp = LocalityPreservingProjection(n_components=30)
 
     # Pool of classifier methods
@@ -82,6 +83,9 @@ def cv_score(target_data,nontarget_data):
         ytest = y[test_index]
         cluster_mask = calc_cluster_mask(Xtrain,ytrain)
 
+        scaler = preprocessing.StandardScaler().fit(Xtrain)
+        Xtrain = scaler.transform(Xtrain)
+        Xtest = scaler.transform(Xtest)
         if cluster_mask != None:
             [v.fit(cluster_mask,Xtrain,ytrain) for v in my_clf_list]
 
