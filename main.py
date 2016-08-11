@@ -44,15 +44,17 @@ def cv_score(target_data,nontarget_data):
     eigen_lda=LinearDiscriminantAnalysis(solver='eigen',shrinkage='auto')
     lsqr_lda=LinearDiscriminantAnalysis(solver='lsqr',shrinkage='auto')
     svd_lda=LinearDiscriminantAnalysis(solver='svd')
+    C10_lin_svm = SVC(C=10,kernel='linear',gamma='auto',probability=True)
+    C10_rbf_svm = SVC(C=10,kernel='rbf',gamma='auto',probability=True)
     C1_lin_svm = SVC(C=1.0,kernel='linear',gamma='auto',probability=True)
     C1_rbf_svm = SVC(C=1.0,kernel='rbf',gamma='auto',probability=True)
-    C0_5_lin_svm = SVC(C=0.5,kernel='linear',gamma='auto',probability=True)
-    C0_5_rbf_svm = SVC(C=0.5,kernel='rbf',gamma='auto',probability=True)
+    C0_1_lin_svm = SVC(C=0.1,kernel='linear',gamma='auto',probability=True)
+    C0_1_rbf_svm = SVC(C=0.1,kernel='rbf',gamma='auto',probability=True)
 
 
     dim_red_dict = {'PCA':pca}
     clf_dict = \
-        {'eigen_lda':eigen_lda,'lsqr_lda':lsqr_lda,'svd_lda':svd_lda,'C1_lin_svm':C1_lin_svm,'C1_rbf_svm':C1_rbf_svm,'C0_5_lin_svm':C0_5_lin_svm,'C0_5_rbf_svm':C0_5_rbf_svm}
+        {'eigen_lda':eigen_lda,'lsqr_lda':lsqr_lda,'svd_lda':svd_lda,'C10_lin_svm':C10_lin_svm,'C10_rbf_svm':C10_rbf_svm,'C1_lin_svm':C1_lin_svm,'C1_rbf_svm':C1_rbf_svm,'C0_1_lin_svm':C0_1_lin_svm,'C0_1_rbf_svm':C0_1_rbf_svm}
 
 
     pipe_objects = itertools.product(dim_red_dict.values(),clf_dict.values())
