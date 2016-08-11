@@ -4,7 +4,7 @@ import numpy as np
 from sklearn import cross_validation
 from mne.channels import read_ch_connectivity
 from mne.stats import permutation_cluster_test
-from sklearn import preprocessing
+
 
 
 import my_pipeline
@@ -84,6 +84,8 @@ def cv_score(target_data,nontarget_data):
         cluster_mask = calc_cluster_mask(Xtrain,ytrain)
 
         scaler = preprocessing.StandardScaler().fit(Xtrain)
+
+
         Xtrain = scaler.transform(Xtrain)
         Xtest = scaler.transform(Xtest)
         if cluster_mask != None:
