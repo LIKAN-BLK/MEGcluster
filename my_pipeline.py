@@ -2,14 +2,13 @@
 import numpy as np
 import copy
 from sklearn.metrics import roc_auc_score
-from sklearn import preprocessing
 
 class My_pipeline:
     def __init__(self,name,dimension_reduction_step,classifer_step):
         self.name = name
         self.dim_reductuction = copy.deepcopy(dimension_reduction_step)
         self.classification = copy.deepcopy(classifer_step)
-        self.scaler = preprocessing.StandardScaler()
+
 
     def _apply_cluster_mask(self,X):
         linear_mask = self.cluster_mask.reshape(self.cluster_mask.shape[0]*self.cluster_mask.shape[1])
@@ -19,7 +18,6 @@ class My_pipeline:
     def fit(self,cluster_mask,X,y):
         self.cluster_mask = cluster_mask
         X = self._apply_cluster_mask(X)
-        X = self.scaler.fit_transform(X)
         self.dim_reductuction.fit(X)
         X = self.dim_reductuction.transform(X)
 
@@ -27,7 +25,6 @@ class My_pipeline:
 
     def _transform(self,X):
         X = self._apply_cluster_mask(X)
-        X = self.scaler.transform(X)
         return self.dim_reductuction.transform(X)
     def predict(self,X):
         X = self._transform(X)

@@ -27,18 +27,18 @@ def calc_cluster_mask(X,y):
         data = [X[y == 1,:,:], X[y == 0,:,:]]
         T_obs, clusters, cluster_p_values, H0 = \
                 permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                 n_jobs=8,verbose=False)
-        if any(cluster_p_values < 0.1):
-            return clusters[np.argmin(cluster_p_values)]
-        else:
-            return None
+                                 n_jobs=8,verbose=True)
+        # if any(cluster_p_values < 0.1):
+        return clusters[np.argmin(cluster_p_values)]
+        # else:
+        #     return None
 
 
 def cv_score(target_data,nontarget_data):
     #Cluster methods (now one correct and one empty)
 
     # Pool of dimension reduction methods
-    pca = PCA(n_components = 60)
+    pca = PCA(n_components = 60,whiten=True)
     # lpp = LocalityPreservingProjection(n_components=30)
 
     # Pool of classifier methods
