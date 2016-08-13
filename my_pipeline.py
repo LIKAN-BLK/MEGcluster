@@ -10,8 +10,8 @@ class My_pipeline:
         self.classification = copy.deepcopy(classifer_step)
 
     def _apply_cluster_mask(self,X):
-        linear_mask = self.cluster_mask.reshape(self.cluster_mask.shape[0]*self.cluster_mask.shape[1])
-        data=X.reshape(X.shape[0],X.shape[1] * X.shape[2])[:,np.nonzero(linear_mask)[0]]
+        linear_mask = np.ndarray.flatten(self.cluster_mask)
+        data=X.reshape(X.shape[0],-1)[:,np.nonzero(linear_mask)[0]]
         return data
 
     def fit(self,cluster_mask,X,y):
