@@ -33,15 +33,18 @@ def calc_cluster_mask(X,y):
         res_clusters = np.empty((times_numer,channel_numer,0))
         freq_number = X.shape[3]
         for freq_index in xrange(freq_number):
+            print('Clustering frequency number %f\n' %freq_index)
             data=[target_data[:,:,:,freq_index],nontarget_data[:,:,:,freq_index]]
             T_obs, clusters, cluster_p_values, H0 = \
                     permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                     n_jobs=8,verbose=True)
-            if any(cluster_p_values < 0.05):
+                                     n_jobs=8,verbose=False)
+            if any(cluster_p_values < 0.1):
                 np.dstack((res_clusters,clusters[np.argmin(cluster_p_values)]))
-                print('Found valuable cluster\n')
+                print('Found valuable cluster, p = %f\n' %np.min(cluster_p_values))
             else:
-                np.dstack((res_clusters,np.zeros(times_numer,channel_numer)))
+                
+                np.dstack((res_clusters,np.zeros((times_numer,channel_numer))))
+                print('Not found valuable cluster, min p = %f\n' %np.min(cluster_p_values))
 
         return res_clusters
 
@@ -114,22 +117,22 @@ def cv_score(target_data,nontarget_data):
         else:
             print('Can not find meaningful cluster')
 
-        [v.fit(np.ones(Xtrain.shape[1:]),Xtrain,ytrain) for v in my_clf_list]
+        #[v.fit(np.ones(Xtrain.shape[1:]),Xtrain,ytrain) for v in my_clf_list]
 
-        for v in my_clf_list:
-            tmp_auc = v.score(Xtest,ytest)
-            print('NO_CLUSTER,dim_reduction=%s,classification=%s, AUC = %f' \
-                  %(v.name[0],v.name[1], tmp_auc))
-            no_cluster_aucs[v.name] = np.append(no_cluster_aucs[v.name],tmp_auc)
+        #for v in my_clf_list:
+        #    tmp_auc = v.score(Xtest,ytest)
+        #    print('NO_CLUSTER,dim_reduction=%s,classification=%s, AUC = %f' \
+        #          %(v.name[0],v.name[1], tmp_auc))
+        #    no_cluster_aucs[v.name] = np.append(no_cluster_aucs[v.name],tmp_auc)
 
     print('Final results')
     for k,v in cluster_aucs.items():
         print('CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
                   %(k[0],k[1], v.mean()))
 
-    for k,v in no_cluster_aucs.items():
-        print('NOCLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
-                  %(k[0],k[1], v.mean()))
+    #for k,v in no_cluster_aucs.items():
+    #    print('NOCLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
+    #              %(k[0],k[1], v.mean()))
 
 
 
