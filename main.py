@@ -12,8 +12,8 @@ from sklearn.svm import SVC
 
 
 def get_data(path):
-    path_to_target = join(path, 'em_06_SI')
-    path_to_nontarget = join(path, 'em_06_error')
+    path_to_target = join(path, 'SI')
+    path_to_nontarget = join(path, 'error')
     target_data = load_data(path_to_target)
     nontarget_data = load_data(path_to_nontarget)
     return target_data, nontarget_data
@@ -81,7 +81,7 @@ def cv_score(target_data,nontarget_data):
     print auc_dict
 
 if __name__=='__main__':
-    path = join('..', 'meg_data')
+    path = join('..', 'meg_data','em06')
     target_data, nontarget_data = get_data(path)
 
     cv_score(target_data,nontarget_data)
