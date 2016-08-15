@@ -36,9 +36,9 @@ def calc_cluster_mask(X,y):
             print('Clustering frequency number %f\n' %freq_index)
             data=[target_data[:,:,:,freq_index],nontarget_data[:,:,:,freq_index]]
             T_obs, clusters, cluster_p_values, H0 = \
-                    permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
+                    permutation_cluster_test(data, n_permutations=500, connectivity=connectivity[0], check_disjoint=True, tail=0,
                                      n_jobs=8,verbose=False)
-            if any(cluster_p_values < 0.1):
+            if any(cluster_p_values < 0.5):
                 np.dstack((res_clusters,clusters[np.argmin(cluster_p_values)]))
                 print('Found valuable cluster, p = %f\n' %np.min(cluster_p_values))
             else:
@@ -90,7 +90,7 @@ def cv_score(target_data,nontarget_data):
 
 
     sfreq=1000 #Sampling freq 1000Hz
-    freqs = np.arange(10, 81, 20)
+    freqs = np.arange(10, 81, 70)
     X = np.zeros((source.shape[0],source.shape[2],source.shape[1],len(freqs)))
     for i in xrange(source.shape[0]):
         X[i,:,:,:] = np.log10(np.absolute(cwt_morlet(source[i,:,:], sfreq, freqs, use_fft=True, n_cycles=2.0, zero_mean=False, decim=1))).transpose(2, 0, 1)
