@@ -36,9 +36,9 @@ def calc_cluster_mask(X,y):
             print('Clustering frequency number %f\n' %freq_index)
             data=[target_data[:,:,:,freq_index],nontarget_data[:,:,:,freq_index]]
             T_obs, clusters, cluster_p_values, H0 = \
-                    permutation_cluster_test(data, n_permutations=500, connectivity=connectivity[0], check_disjoint=True, tail=0,
+                    permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
                                      n_jobs=8,verbose=False)
-            if any(cluster_p_values < 0.5):
+            if any(cluster_p_values < 0.2):
                 res_clusters = np.dstack((res_clusters,clusters[np.argmin(cluster_p_values)]))
                 print('Found valuable cluster, p = %f\n' %np.min(cluster_p_values))
             else:
@@ -106,7 +106,7 @@ def cv_score(target_data,nontarget_data):
 
         cluster_mask = calc_cluster_mask(Xtrain,ytrain)
 
-        if cluster_mask.size != 0:
+        if (cluster_mask.size != 0) & (cluster_mask.any()):
             [v.fit(cluster_mask,Xtrain,ytrain) for v in my_clf_list]
 
             for v in my_clf_list:
