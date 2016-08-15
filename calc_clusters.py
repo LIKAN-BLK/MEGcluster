@@ -17,11 +17,14 @@ def search_clusters(target_data, nontarget_data):
     return res
 
 def process_dirs(path_to_experiments):
-    entries = os.path.isdir(os.listdir(path_to_experiments))
+    entries = os.listdir(path_to_experiments)
     dirs = [os.path.join(path_to_experiments,dir) for dir in entries if os.path.isdir(os.path.join(path_to_experiments,dir))]
-    pipe = lambda path: search_clusters(get_data(path))
+    pipe = lambda path: search_clusters(*(get_data(path)))
     result = map(pipe,dirs)
     for i,dir in enumerate(dirs):
         print('%s:' % dir)
         for entry in result[i].items():
             print '  {0}:{1}'.format(*entry)
+
+if __name__ == '__main__':
+    process_dirs(os.path.join('..','meg_data'))
