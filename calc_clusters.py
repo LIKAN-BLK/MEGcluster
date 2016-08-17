@@ -2,7 +2,16 @@ from main import get_data
 from mne.channels import read_ch_connectivity
 from mne.stats import permutation_cluster_test
 import numpy as np
+from mne.io import read_raw_fif
+from mne.datasets import sample
+from mne.channels import find_layout
+from mne.viz import plot_topomap
 import os
+
+def visualise(data):
+    neuromag = read_raw_fif(sample.data_path() + '/MEG/sample/sample_audvis_raw.fif')
+    layout = find_layout(neuromag.info, ch_type='grad')
+    plot_topomap(data,layout.pos)
 
 def search_clusters(target_data, nontarget_data):
     connectivity = read_ch_connectivity('neuromag306planar_neighb.mat', picks=None)
