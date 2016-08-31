@@ -14,24 +14,39 @@ from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.svm import SVC
 import itertools
+connectivity = read_ch_connectivity('neuromag306planar_neighb.mat', picks=None)
 
 def get_data(path):
-    path_to_target = join(path, 'em_06_SI')
-    path_to_nontarget = join(path, 'em_06_error')
+    path_to_target = join(path, 'SI')
+    path_to_nontarget = join(path, 'error')
     target_data = load_data(path_to_target)
     nontarget_data = load_data(path_to_nontarget)
     return target_data, nontarget_data
 
 def calc_cluster_mask(X,y):
-        connectivity = read_ch_connectivity('neuromag306planar_neighb.mat', picks=None)
+        p_threshold = 0.000005 #Magic
+
+        def calc_threshold(p_thresh,n_samples_per_group):
+            from scipy import stats
+            ppf = stats.f.ppf
+            p_thresh = p_thresh / 2 # Two tailed
+            threshold = ppf(1. - p_thresh, *n_samples_per_group)
+            print('P threshold =%f, F threshold = %f' %(p_thresh*2,threshold) )
+            return threshold
+
+        threshold = calc_threshold(p_threshold,[len(target_data),len(nontarget_data)])
         data = [X[y == 1,:,:], X[y == 0,:,:]]
         T_obs, clusters, cluster_p_values, H0 = \
                 permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                 n_jobs=8,verbose=True)
-        # if any(cluster_p_values < 0.1):
-        return clusters[np.argmin(cluster_p_values)]
-        # else:
-        #     return None
+                                 threshold=threshold,n_jobs=3,verbose=False)
+        cluster_threshold = 0.2
+        print('Found clusters lower p=%f' %cluster_threshold)
+        for ind_cl, cl in enumerate(clusters):
+            if cluster_p_values[ind_cl] < cluster_threshold:
+                print cluster_p_values[ind_cl],cl.size
+        return reduce(lambda res,x:res | x,[cl for ind_cl,cl in enumerate(clusters) if cluster_p_values[ind_cl]<0.2])
+        # clusters[np.argmin(cluster_p_values)]
+
 
 
 def cv_score(target_data,nontarget_data):
@@ -114,6 +129,6 @@ def cv_score(target_data,nontarget_data):
 
 
 if __name__=='__main__':
-    path = join('..', 'meg_data')
+    path = join('..', 'meg_data','em06')
     target_data, nontarget_data = get_data(path)
     cv_score(target_data,nontarget_data)
