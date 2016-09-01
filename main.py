@@ -43,8 +43,8 @@ def calc_cluster_mask(X,y):
         print('Found clusters lower p=%f' %cluster_threshold)
         for ind_cl, cl in enumerate(clusters):
             if cluster_p_values[ind_cl] < cluster_threshold:
-                print cluster_p_values[ind_cl],cl.size
-        return reduce(lambda res,x:res | x,[cl for ind_cl,cl in enumerate(clusters) if cluster_p_values[ind_cl]<0.2])
+                print cluster_p_values[ind_cl],cl.sum()
+        return reduce(lambda res,x:res | x,[cl for ind_cl,cl in enumerate(clusters) if cluster_p_values[ind_cl]<cluster_threshold])
         # clusters[np.argmin(cluster_p_values)]
 
 
@@ -129,6 +129,6 @@ def cv_score(target_data,nontarget_data):
 
 
 if __name__=='__main__':
-    path = join('..', 'meg_data','em06')
+    path = join('..', 'meg_data','em01')
     target_data, nontarget_data = get_data(path)
     cv_score(target_data,nontarget_data)
