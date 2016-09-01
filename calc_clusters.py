@@ -8,10 +8,34 @@ from mne.channels import find_layout
 from mne.viz import plot_topomap
 import os
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy.signal import butter, lfilter
+
 
 info = read_raw_fif(sample.data_path() + '/MEG/sample/sample_audvis_raw.fif',verbose=False).info
 connectivity = read_ch_connectivity('neuromag306planar_neighb.mat', picks=None)
+
+
+
+def butter_lowpass(cutoff, fs, order=5):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    return b, a
+
+def butter_lowpass_filter(data, cutoff, fs, order=5):
+    b, a = butter_lowpass(cutoff, fs, order=order)
+    y=np.zeros(data.shape)
+    for tr in range(data.shape[0]):
+        for ch in range(data.shape[2]):
+            y[tr,:,ch] = lfilter(b, a, data[tr,:,ch])
+    return y
+
+def tmp_plot(data):
+    import matplotlib.pyplot as plt
+    for ch in range(1,11):
+        plt.subplot(5, 2, ch)
+        plt.plot(data[0,:,ch])
+
 
 def save_fig(exp_num,title,fig):
     if not os.path.isdir(os.path.join('results',exp_num)):
@@ -70,16 +94,24 @@ def calc_threshold(p_thresh,n_samples_per_group):
     print('P threshold =%f, F threshold = %f' %(p_thresh*2,threshold) )
     return threshold
 
+
 def search_clusters(exp_num,target_data, nontarget_data):
     print(exp_num)
+    order = 6
+    fs = 1000.0       # sample rate, Hz
+    cutoff = 25  # desired cutoff frequency of the filter, Hz
+    target_data = butter_lowpass_filter(target_data, cutoff, fs, order)
+    nontarget_data = butter_lowpass_filter(nontarget_data, cutoff, fs, order)
+
     X = [target_data, nontarget_data]
+
     f_heads(exp_num,X)
     p_thresholds = [0.00001,0.000005] #Magic
     for p_threshold in p_thresholds:
         threshold = calc_threshold(p_threshold,[len(target_data),len(nontarget_data)])
         T_obs, clusters, cluster_p_values, H0 = \
             permutation_cluster_test(X, n_permutations=1500, connectivity=connectivity[0],threshold = threshold,
-                                     check_disjoint=True, tail=0,n_jobs=4,verbose=False)
+                                     check_disjoint=True, tail=0,n_jobs=6,verbose=False)
 
 
         indexes = sorted(range(len(cluster_p_values)), key=lambda k: cluster_p_values[k])[:5]
