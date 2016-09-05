@@ -4,6 +4,8 @@ import numpy as np
 from sklearn import cross_validation
 from mne.channels import read_ch_connectivity
 from mne.stats import permutation_cluster_test
+import sys
+import os
 
 
 
@@ -38,7 +40,7 @@ def calc_cluster_mask(X,y):
         data = [X[y == 1,:,:], X[y == 0,:,:]]
         T_obs, clusters, cluster_p_values, H0 = \
                 permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                 threshold=threshold,n_jobs=3,verbose=False)
+                                 threshold=threshold,n_jobs=8,verbose=False)
         cluster_threshold = 0.2
         print('Found clusters lower p=%f' %cluster_threshold)
         for ind_cl, cl in enumerate(clusters):
@@ -129,6 +131,11 @@ def cv_score(target_data,nontarget_data):
 
 
 if __name__=='__main__':
-    path = join('..', 'meg_data','em01')
+    exp_num=sys.argv[1]
+    if not os.path.isdir('results'):
+        os.mkdir('results')
+    sys.stdout = open(exp_num, 'w')
+
+    path = join('..', 'meg_data',exp_num)
     target_data, nontarget_data = get_data(path)
     cv_score(target_data,nontarget_data)
