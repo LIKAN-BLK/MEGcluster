@@ -134,7 +134,7 @@ if __name__=='__main__':
     exp_num=sys.argv[1]
     if not os.path.isdir('results'):
         os.mkdir('results')
-    sys.stdout = open(exp_num, 'w')
+    sys.stdout = open(join('results',exp_num), 'w')
 
     path = join('..', 'meg_data',exp_num)
     target_data, nontarget_data = get_data(path)
