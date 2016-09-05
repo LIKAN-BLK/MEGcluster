@@ -7,6 +7,7 @@ from mne.stats import permutation_cluster_test
 import sys
 import os
 
+import freq_filtering
 
 
 import my_pipeline
@@ -52,6 +53,12 @@ def calc_cluster_mask(X,y):
 
 
 def cv_score(target_data,nontarget_data):
+    order = 6
+    fs = 1000.0       # sample rate, Hz
+    cutoff = 25  # desired cutoff frequency of the filter, Hz
+    target_data = freq_filtering.butter_lowpass_filter(target_data, cutoff, fs, order)
+    nontarget_data = freq_filtering.butter_lowpass_filter(nontarget_data, cutoff, fs, order)
+
     #Cluster methods (now one correct and one empty)
 
     # Pool of dimension reduction methods
@@ -134,7 +141,7 @@ if __name__=='__main__':
     exp_num=sys.argv[1]
     if not os.path.isdir('results'):
         os.mkdir('results')
-    sys.stdout = open(join('results',exp_num), 'w')
+    sys.stdout = open(join('.','results',exp_num,'.log'), 'w')
 
     path = join('..', 'meg_data',exp_num)
     target_data, nontarget_data = get_data(path)
