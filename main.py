@@ -45,7 +45,7 @@ def calc_cluster_mask(X,y,freqs):
         cluster_threshold = 0.2
         step = freqs[1]-freqs[0]
         for freq_index in xrange(freq_number):
-            print('Clustering frequency number %f: freq %f\n' %(freq_index,freqs[freq_index],step))
+            print('Clustering frequency number %f: freq %f, step %f\n' %(freq_index,freqs[freq_index],step))
             data=[target_data[:,:,:,freq_index],nontarget_data[:,:,:,freq_index]]
             T_obs, clusters, cluster_p_values, H0 = \
                     permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
@@ -174,7 +174,7 @@ if __name__=='__main__':
     exp_num=sys.argv[1]
     if not os.path.isdir('results'):
         os.mkdir('results')
-    # sys.stdout = open(os.path.join('.','results',exp_num+'.log'), 'w')
+    sys.stdout = open(os.path.join('.','results',exp_num+'.log'), 'w')
 
     path = os.path.join('..', 'meg_data',exp_num)
     target_data, nontarget_data = get_data(path)
