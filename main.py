@@ -40,8 +40,8 @@ def calc_cluster_mask(X,y):
         threshold = calc_threshold(p_threshold,[len(target_data),len(nontarget_data)])
         data = [X[y == 1,:,:], X[y == 0,:,:]]
         T_obs, clusters, cluster_p_values, H0 = \
-                permutation_cluster_test(data, n_permutations=1000, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                 threshold=threshold,n_jobs=6,verbose=False)
+                permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
+                                 threshold=threshold,n_jobs=8,verbose=False)
         cluster_threshold = 0.2
         print('Found clusters lower p=%f' %cluster_threshold)
         for ind_cl, cl in enumerate(clusters):
@@ -95,7 +95,7 @@ def cv_score(target_data,nontarget_data):
     X = np.concatenate((target_data,nontarget_data),axis=0)
     y = np.hstack((np.ones(target_data.shape[0]),np.zeros(nontarget_data.shape[0])))
 
-    cv = cross_validation.ShuffleSplit(len(y),n_iter=2,test_size=0.2)
+    cv = cross_validation.ShuffleSplit(len(y),n_iter=5,test_size=0.2)
 
 
     for num_fold,(train_index,test_index) in enumerate(cv):
