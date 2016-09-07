@@ -21,7 +21,7 @@ def get_data(path):
     nontarget_data = load_data(path_to_nontarget)
     return target_data, nontarget_data
 
-def calc_cluster_mask(X,y):
+def calc_cluster_mask(X,y,freqs):
         def calc_threshold(p_thresh,n_samples_per_group):
             from scipy import stats
             ppf = stats.f.ppf
@@ -30,7 +30,7 @@ def calc_cluster_mask(X,y):
             print('P threshold =%f, F threshold = %f' %(p_thresh*2,threshold) )
             return threshold
 
-        p_threshold = 0.000005
+        p_threshold = 0.00001
         threshold = calc_threshold(p_threshold,[sum(y==1),sum(y==0)])
         connectivity = read_ch_connectivity('neuromag306planar_neighb.mat', picks=None)
 
@@ -43,8 +43,9 @@ def calc_cluster_mask(X,y):
         freq_number = X.shape[3]
 
         cluster_threshold = 0.2
+        step = freqs[1]-freqs[0]
         for freq_index in xrange(freq_number):
-            print('Clustering frequency number %f\n' %freq_index)
+            print('Clustering frequency number %f: freq %f\n' %(freq_index,freqs[freq_index],step))
             data=[target_data[:,:,:,freq_index],nontarget_data[:,:,:,freq_index]]
             T_obs, clusters, cluster_p_values, H0 = \
                     permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
@@ -120,7 +121,7 @@ def cv_score(target_data,nontarget_data):
         Xtest = X[test_index,:,:,:]
         ytest = y[test_index]
 
-        cluster_mask = calc_cluster_mask(Xtrain,ytrain)
+        cluster_mask = calc_cluster_mask(Xtrain,ytrain,freqs)
 
         if (cluster_mask.size != 0) & (cluster_mask.any()):
             [v.fit(cluster_mask,Xtrain,ytrain) for v in my_clf_list]
