@@ -41,15 +41,22 @@ def calc_cluster_mask(X,y):
         channel_numer = X.shape[2]
         res_clusters = np.empty((times_numer,channel_numer,0))
         freq_number = X.shape[3]
+
+        cluster_threshold = 0.2
         for freq_index in xrange(freq_number):
             print('Clustering frequency number %f\n' %freq_index)
             data=[target_data[:,:,:,freq_index],nontarget_data[:,:,:,freq_index]]
             T_obs, clusters, cluster_p_values, H0 = \
-                    permutation_cluster_test(data, n_permutations=1000, connectivity=connectivity[0], check_disjoint=True, tail=0,
+                    permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
                                      n_jobs=8,verbose=False,threshold=threshold)
-            if any(cluster_p_values < 0.2):
-                res_clusters = np.dstack((res_clusters,clusters[np.argmin(cluster_p_values)]))
-                print('Found valuable cluster, p = %f\n' %np.min(cluster_p_values))
+
+
+            if any(cluster_p_values < cluster_threshold):
+                print('Found clusters lower p=%f' %cluster_threshold)
+                for ind_cl, cl in enumerate(clusters):
+                    if cluster_p_values[ind_cl] < cluster_threshold:
+                        print cluster_p_values[ind_cl],cl.sum()
+                res_clusters = np.dstack((res_clusters,reduce(lambda res,x:res | x,[cl for ind_cl,cl in enumerate(clusters) if cluster_p_values[ind_cl]<cluster_threshold])))
             else:
 
                 res_clusters = np.dstack((res_clusters,np.zeros((times_numer,channel_numer))))
