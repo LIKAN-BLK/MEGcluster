@@ -110,7 +110,7 @@ def cv_score(target_data,nontarget_data):
     freqs = np.arange(15, 25, 2)
     X = np.zeros((source.shape[0],source.shape[2],source.shape[1],len(freqs)))
     for i in xrange(source.shape[0]):
-        X[i,:,:,:] = np.log10(np.absolute(cwt_morlet(source[i,:,:], sfreq, freqs, use_fft=True, n_cycles=2.0, zero_mean=False, decim=1))).transpose(2, 0, 1)
+        X[i,:,:,:] = np.log10(np.absolute(cwt_morlet(source[i,:,:], sfreq, freqs, use_fft=True, n_cycles=3.0, zero_mean=True, decim=1))).transpose(2, 0, 1)
 
     cv = cross_validation.ShuffleSplit(len(y),n_iter=5,test_size=0.2)
     for num_fold,(train_index,test_index) in enumerate(cv):
@@ -174,7 +174,7 @@ if __name__=='__main__':
     exp_num=sys.argv[1]
     if not os.path.isdir('results'):
         os.mkdir('results')
-    sys.stdout = open(os.path.join('.','results',exp_num+'.log'), 'w')
+    # sys.stdout = open(os.path.join('.','results',exp_num+'.log'), 'w')
 
     path = os.path.join('..', 'meg_data',exp_num)
     target_data, nontarget_data = get_data(path)
