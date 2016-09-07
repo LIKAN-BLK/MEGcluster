@@ -40,8 +40,8 @@ def calc_cluster_mask(X,y):
         threshold = calc_threshold(p_threshold,[len(target_data),len(nontarget_data)])
         data = [X[y == 1,:,:], X[y == 0,:,:]]
         T_obs, clusters, cluster_p_values, H0 = \
-                permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                 threshold=threshold,n_jobs=8,verbose=False)
+                permutation_cluster_test(data, n_permutations=1000, connectivity=connectivity[0], check_disjoint=True, tail=0,
+                                 threshold=threshold,n_jobs=6,verbose=False)
         cluster_threshold = 0.2
         print('Found clusters lower p=%f' %cluster_threshold)
         for ind_cl, cl in enumerate(clusters):
@@ -95,7 +95,7 @@ def cv_score(target_data,nontarget_data):
     X = np.concatenate((target_data,nontarget_data),axis=0)
     y = np.hstack((np.ones(target_data.shape[0]),np.zeros(nontarget_data.shape[0])))
 
-    cv = cross_validation.ShuffleSplit(len(y),n_iter=5,test_size=0.2)
+    cv = cross_validation.ShuffleSplit(len(y),n_iter=2,test_size=0.2)
 
 
     for num_fold,(train_index,test_index) in enumerate(cv):
@@ -126,22 +126,35 @@ def cv_score(target_data,nontarget_data):
             no_cluster_aucs[v.name] = np.append(no_cluster_aucs[v.name],tmp_auc)
 
     print('Final results')
+    cluster_aucs = {k:v.mean() for k,v in cluster_aucs.items()}
     for k,v in cluster_aucs.items():
         print('CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
-                  %(k[0],k[1], v.mean()))
+                  %(k[0],k[1], v))
+    cluster_max_key = max(cluster_aucs,key=cluster_aucs.get)
+    print('\nMAX CLUSTER RESULT:CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f\n' \
+                  %(cluster_max_key[0],cluster_max_key[1], cluster_aucs[cluster_max_key]))
 
+    no_cluster_aucs = {k:v.mean() for k,v in no_cluster_aucs.items()}
     for k,v in no_cluster_aucs.items():
         print('NOCLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
-                  %(k[0],k[1], v.mean()))
+                  %(k[0],k[1], v))
+    nocluster_max_key = max(no_cluster_aucs,key=no_cluster_aucs.get)
+    print('\nMAX NOCLUSTER RESULT:CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f\n' \
+                  %(nocluster_max_key[0],nocluster_max_key[1], no_cluster_aucs[nocluster_max_key]))
 
-
+    if (no_cluster_aucs[nocluster_max_key]>no_cluster_aucs[nocluster_max_key]):
+        print('TOTALMAX:NOCLUSTER RESULT:CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
+                  %(nocluster_max_key[0],nocluster_max_key[1], no_cluster_aucs[nocluster_max_key]))
+    else:
+        print('\nMAX CLUSTER RESULT:CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
+                  %(cluster_max_key[0],cluster_max_key[1], cluster_aucs[cluster_max_key]))
 
 
 if __name__=='__main__':
     exp_num=sys.argv[1]
     if not os.path.isdir('results'):
         os.mkdir('results')
-    sys.stdout = open(join('.','results',exp_num+'.log'), 'w')
+    # sys.stdout = open(join('.','results',exp_num+'.log'), 'w')
 
     path = join('..', 'meg_data',exp_num)
     target_data, nontarget_data = get_data(path)
