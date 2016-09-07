@@ -49,7 +49,7 @@ def calc_cluster_mask(X,y,freqs):
             data=[target_data[:,:,:,freq_index],nontarget_data[:,:,:,freq_index]]
             T_obs, clusters, cluster_p_values, H0 = \
                     permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                     n_jobs=8,verbose=False,threshold=threshold)
+                                     n_jobs=4,verbose=False,threshold=threshold)
 
 
             if any(cluster_p_values < cluster_threshold):
@@ -70,7 +70,7 @@ def cv_score(target_data,nontarget_data):
     #Cluster methods (now one correct and one empty)
 
     # Pool of dimension reduction methods
-    pca = PCA(n_components = 60, whiten=True)
+    pca = PCA(n_components = 160, whiten=True,copy=False)
 
 
     # Pool of classifier methods
