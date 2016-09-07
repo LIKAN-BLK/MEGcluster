@@ -1,5 +1,4 @@
 from load_data import load_data
-from os.path import join
 import numpy as np
 from sklearn import cross_validation
 from mne.channels import read_ch_connectivity
@@ -8,23 +7,33 @@ from mne.time_frequency import cwt_morlet
 
 import my_pipeline
 from sklearn.decomposition import PCA
-# from lpproj import LocalityPreservingProjection
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.svm import SVC
 import itertools
+import os
+import sys
 
 def get_data(path):
-    path_to_target = join(path, 'em_06_SI')
-    path_to_nontarget = join(path, 'em_06_error')
+    path_to_target = os.path.join(path, 'SI')
+    path_to_nontarget = os.path.join(path, 'error')
     target_data = load_data(path_to_target)
     nontarget_data = load_data(path_to_nontarget)
     return target_data, nontarget_data
 
 def calc_cluster_mask(X,y):
+        def calc_threshold(p_thresh,n_samples_per_group):
+            from scipy import stats
+            ppf = stats.f.ppf
+            p_thresh = p_thresh / 2 # Two tailed
+            threshold = ppf(1. - p_thresh, *n_samples_per_group)
+            print('P threshold =%f, F threshold = %f' %(p_thresh*2,threshold) )
+            return threshold
+
+        p_threshold = 0.000005
+        threshold = calc_threshold(p_threshold,[sum(y==1),sum(y==0)])
         connectivity = read_ch_connectivity('neuromag306planar_neighb.mat', picks=None)
-        # target_indexes = np.nonzero(y==1)
-        # nontarget_indexes = np.nonzero(y==0)
+
         target_data = X[y==1,:,:,:]
         nontarget_data = X[y==0,:,:,:]
 
@@ -36,13 +45,13 @@ def calc_cluster_mask(X,y):
             print('Clustering frequency number %f\n' %freq_index)
             data=[target_data[:,:,:,freq_index],nontarget_data[:,:,:,freq_index]]
             T_obs, clusters, cluster_p_values, H0 = \
-                    permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                     n_jobs=8,verbose=False)
+                    permutation_cluster_test(data, n_permutations=1000, connectivity=connectivity[0], check_disjoint=True, tail=0,
+                                     n_jobs=8,verbose=False,threshold=threshold)
             if any(cluster_p_values < 0.2):
                 res_clusters = np.dstack((res_clusters,clusters[np.argmin(cluster_p_values)]))
                 print('Found valuable cluster, p = %f\n' %np.min(cluster_p_values))
             else:
-                
+
                 res_clusters = np.dstack((res_clusters,np.zeros((times_numer,channel_numer))))
                 print('Not found valuable cluster, min p = %f\n' %np.min(cluster_p_values))
 
@@ -54,7 +63,7 @@ def cv_score(target_data,nontarget_data):
 
     # Pool of dimension reduction methods
     pca = PCA(n_components = 60, whiten=True)
-    # lpp = LocalityPreservingProjection(n_components=30)
+
 
     # Pool of classifier methods
     eigen_lda=LinearDiscriminantAnalysis(solver='eigen',shrinkage='auto')
@@ -90,7 +99,7 @@ def cv_score(target_data,nontarget_data):
 
 
     sfreq=1000 #Sampling freq 1000Hz
-    freqs = np.arange(10, 81, 20)
+    freqs = np.arange(15, 25, 2)
     X = np.zeros((source.shape[0],source.shape[2],source.shape[1],len(freqs)))
     for i in xrange(source.shape[0]):
         X[i,:,:,:] = np.log10(np.absolute(cwt_morlet(source[i,:,:], sfreq, freqs, use_fft=True, n_cycles=2.0, zero_mean=False, decim=1))).transpose(2, 0, 1)
@@ -117,27 +126,48 @@ def cv_score(target_data,nontarget_data):
         else:
             print('Can not find meaningful cluster')
 
-        #[v.fit(np.ones(Xtrain.shape[1:]),Xtrain,ytrain) for v in my_clf_list]
+        [v.fit(np.ones(Xtrain.shape[1:]),Xtrain,ytrain) for v in my_clf_list]
 
-        #for v in my_clf_list:
-        #    tmp_auc = v.score(Xtest,ytest)
-        #    print('NO_CLUSTER,dim_reduction=%s,classification=%s, AUC = %f' \
-        #          %(v.name[0],v.name[1], tmp_auc))
-        #    no_cluster_aucs[v.name] = np.append(no_cluster_aucs[v.name],tmp_auc)
+        for v in my_clf_list:
+           tmp_auc = v.score(Xtest,ytest)
+           print('NO_CLUSTER,dim_reduction=%s,classification=%s, AUC = %f' \
+                 %(v.name[0],v.name[1], tmp_auc))
+           no_cluster_aucs[v.name] = np.append(no_cluster_aucs[v.name],tmp_auc)
 
     print('Final results')
+    cluster_aucs = {k:v.mean() for k,v in cluster_aucs.items()}
     for k,v in cluster_aucs.items():
         print('CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
-                  %(k[0],k[1], v.mean()))
+                  %(k[0],k[1], v))
+    cluster_max_key = max(cluster_aucs,key=cluster_aucs.get)
+    print('\nMAX CLUSTER RESULT:CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f\n' \
+        %(cluster_max_key[0],cluster_max_key[1], cluster_aucs[cluster_max_key]))
 
-    #for k,v in no_cluster_aucs.items():
-    #    print('NOCLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
-    #              %(k[0],k[1], v.mean()))
+    no_cluster_aucs = {k:v.mean() for k,v in no_cluster_aucs.items()}
+    for k,v in no_cluster_aucs.items():
+        print('NOCLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
+                  %(k[0],k[1], v))
+    nocluster_max_key = max(no_cluster_aucs,key=no_cluster_aucs.get)
+    print('\nMAX NOCLUSTER RESULT:CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f\n' \
+                  %(nocluster_max_key[0],nocluster_max_key[1], no_cluster_aucs[nocluster_max_key]))
+
+    if (no_cluster_aucs[nocluster_max_key]>no_cluster_aucs[nocluster_max_key]):
+        print('TOTALMAX:NOCLUSTER RESULT:CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
+                  %(nocluster_max_key[0],nocluster_max_key[1], no_cluster_aucs[nocluster_max_key]))
+    else:
+        print('\nMAX CLUSTER RESULT:CLUSTER,dim_reduction=%s,classification=%s, Mean_AUC = %f' \
+                  %(cluster_max_key[0],cluster_max_key[1], cluster_aucs[cluster_max_key]))
+
 
 
 
 
 if __name__=='__main__':
-    path = join('..', 'meg_data')
+    exp_num=sys.argv[1]
+    if not os.path.isdir('results'):
+        os.mkdir('results')
+    # sys.stdout = open(os.path.join('.','results',exp_num+'.log'), 'w')
+
+    path = os.path.join('..', 'meg_data',exp_num)
     target_data, nontarget_data = get_data(path)
     cv_score(target_data,nontarget_data)

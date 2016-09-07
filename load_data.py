@@ -12,8 +12,7 @@ def load_data(path):
 
 def extract_grad_mat(path,gradiom_mask):
     data=loadmat(path)
-    return (data['data'][gradiom_mask])[np.newaxis,...] #additional dimension for easier concatenation to 3d array in the future
+    return (data['F'][gradiom_mask])[np.newaxis,...] #additional dimension for easier concatenation to 3d array in the future
 
 if __name__== '__main__':
-    data = load_data('../meg_data/em_06_SI')
     print('It\'s fun!')
