@@ -172,6 +172,7 @@ def cv_score(target_data,nontarget_data):
 
 if __name__=='__main__':
     exp_num=sys.argv[1]
+    print(exp_num)
     if not os.path.isdir('results'):
         os.mkdir('results')
     # sys.stdout = open(os.path.join('.','results',exp_num+'.log'), 'w')
