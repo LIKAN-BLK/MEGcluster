@@ -6,7 +6,7 @@ from mne.stats import permutation_cluster_test
 from mne.time_frequency import cwt_morlet
 
 import my_pipeline
-from sklearn.decomposition import PCA
+from sklearn.decomposition import TruncatedSVD
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.svm import SVC
@@ -70,7 +70,7 @@ def cv_score(target_data,nontarget_data):
     #Cluster methods (now one correct and one empty)
 
     # Pool of dimension reduction methods
-    pca = PCA(n_components = 160, whiten=True,copy=False)
+    svd = TruncatedSVD(n_components = 160)
 
 
     # Pool of classifier methods
@@ -85,7 +85,7 @@ def cv_score(target_data,nontarget_data):
     C0_1_rbf_svm = SVC(C=0.1,kernel='rbf',gamma='auto',probability=True)
 
 
-    dim_red_dict = {'PCA':pca}
+    dim_red_dict = {'TruncSVD':svd}
     clf_dict = \
         {'eigen_lda':eigen_lda,'lsqr_lda':lsqr_lda,'svd_lda':svd_lda,'C10_lin_svm':C10_lin_svm,'C10_rbf_svm':C10_rbf_svm,'C1_lin_svm':C1_lin_svm,'C1_rbf_svm':C1_rbf_svm,'C0_1_lin_svm':C0_1_lin_svm,'C0_1_rbf_svm':C0_1_rbf_svm}
 
@@ -110,7 +110,10 @@ def cv_score(target_data,nontarget_data):
     freqs = np.arange(15, 25, 2)
     X = np.zeros((source.shape[0],source.shape[2],source.shape[1],len(freqs)))
     for i in xrange(source.shape[0]):
-        X[i,:,:,:] = np.log10(np.absolute(cwt_morlet(source[i,:,:], sfreq, freqs, use_fft=True, n_cycles=3.0, zero_mean=True, decim=1))).transpose(2, 0, 1)
+        tf_magnitude = np.absolute(cwt_morlet(source[i,:,:], sfreq, freqs, use_fft=True, n_cycles=3.0, zero_mean=True, decim=1))
+        tf_magnitude_baseline = tf_magnitude[:,:,100:200].mean(axis=2)
+        tf_magnitude = tf_magnitude - tf_magnitude_baseline
+        X[i,:,:,:] = np.log10(tf_magnitude).transpose(2, 0, 1)
 
     cv = cross_validation.ShuffleSplit(len(y),n_iter=5,test_size=0.2)
     for num_fold,(train_index,test_index) in enumerate(cv):
