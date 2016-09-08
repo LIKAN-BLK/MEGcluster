@@ -113,7 +113,7 @@ def cv_score(target_data,nontarget_data):
         tf_magnitude = np.absolute(cwt_morlet(source[i,:,:], sfreq, freqs, use_fft=True, n_cycles=3.0, zero_mean=True, decim=1))
         tf_magnitude_baseline = tf_magnitude[:,:,100:200].mean(axis=2)
         tf_magnitude = tf_magnitude - np.tile(tf_magnitude_baseline[:,:,np.newaxis],(1,1,tf_magnitude.shape[2]))
-        X[i,:,:,:] = np.log10(tf_magnitude).transpose(2, 0, 1)
+        X[i,:,:,:] = (tf_magnitude).transpose(2, 0, 1)
 
     cv = cross_validation.ShuffleSplit(len(y),n_iter=5,test_size=0.2)
     for num_fold,(train_index,test_index) in enumerate(cv):
