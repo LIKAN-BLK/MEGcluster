@@ -6,7 +6,7 @@ from mne.stats import permutation_cluster_test
 from mne.time_frequency import cwt_morlet
 
 import my_pipeline
-from sklearn.decomposition import TruncatedSVD
+from sklearn.decomposition import RandomizedPCA
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.svm import SVC
@@ -49,7 +49,7 @@ def calc_cluster_mask(X,y,freqs):
             data=[target_data[:,:,:,freq_index],nontarget_data[:,:,:,freq_index]]
             T_obs, clusters, cluster_p_values, H0 = \
                     permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                     n_jobs=4,verbose=False,threshold=threshold)
+                                     n_jobs=2,verbose=False,threshold=threshold)
 
 
             if any(cluster_p_values < cluster_threshold):
@@ -70,7 +70,7 @@ def cv_score(target_data,nontarget_data):
     #Cluster methods (now one correct and one empty)
 
     # Pool of dimension reduction methods
-    svd = TruncatedSVD(n_components = 160)
+    svd = RandomizedPCA(n_components = 160,whiten=True)
 
 
     # Pool of classifier methods
@@ -85,7 +85,7 @@ def cv_score(target_data,nontarget_data):
     C0_1_rbf_svm = SVC(C=0.1,kernel='rbf',gamma='auto',probability=True)
 
 
-    dim_red_dict = {'TruncSVD':svd}
+    dim_red_dict = {'RandomizedPCA':svd}
     clf_dict = \
         {'eigen_lda':eigen_lda,'lsqr_lda':lsqr_lda,'svd_lda':svd_lda,'C10_lin_svm':C10_lin_svm,'C10_rbf_svm':C10_rbf_svm,'C1_lin_svm':C1_lin_svm,'C1_rbf_svm':C1_rbf_svm,'C0_1_lin_svm':C0_1_lin_svm,'C0_1_rbf_svm':C0_1_rbf_svm}
 
@@ -178,7 +178,7 @@ if __name__=='__main__':
     print(exp_num)
     if not os.path.isdir('results'):
         os.mkdir('results')
-    # sys.stdout = open(os.path.join('.','results',exp_num+'.log'), 'w')
+    sys.stdout = open(os.path.join('.','results',exp_num+'.log'), 'w')
 
     path = os.path.join('..', 'meg_data',exp_num)
     target_data, nontarget_data = get_data(path)
