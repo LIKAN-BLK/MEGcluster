@@ -1,4 +1,4 @@
-from load_data import load_data
+from load_data import get_data
 from os.path import join
 import numpy as np
 from sklearn import cross_validation
@@ -19,12 +19,6 @@ from sklearn.svm import SVC
 import itertools
 connectivity = read_ch_connectivity('neuromag306planar_neighb.mat', picks=None)
 
-def get_data(path):
-    path_to_target = join(path, 'SI')
-    path_to_nontarget = join(path, 'error')
-    target_data = load_data(path_to_target)
-    nontarget_data = load_data(path_to_nontarget)
-    return target_data, nontarget_data
 
 def calc_cluster_mask(X,y):
         p_threshold = 0.000005 #Magic
@@ -40,7 +34,7 @@ def calc_cluster_mask(X,y):
         threshold = calc_threshold(p_threshold,[len(target_data),len(nontarget_data)])
         data = [X[y == 1,:,:], X[y == 0,:,:]]
         T_obs, clusters, cluster_p_values, H0 = \
-                permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
+                permutation_cluster_test(data, n_permutations=1000, connectivity=connectivity[0], check_disjoint=True, tail=0,
                                  threshold=threshold,n_jobs=8,verbose=False)
         cluster_threshold = 0.2
         print('Found clusters lower p=%f' %cluster_threshold)
@@ -62,7 +56,7 @@ def cv_score(target_data,nontarget_data):
     #Cluster methods (now one correct and one empty)
 
     # Pool of dimension reduction methods
-    pca = PCA(n_components = 60,whiten=True)
+    pca = PCA(n_components = 80,whiten=True)
     # lpp = LocalityPreservingProjection(n_components=30)
 
     # Pool of classifier methods
@@ -95,7 +89,7 @@ def cv_score(target_data,nontarget_data):
     X = np.concatenate((target_data,nontarget_data),axis=0)
     y = np.hstack((np.ones(target_data.shape[0]),np.zeros(nontarget_data.shape[0])))
 
-    cv = cross_validation.ShuffleSplit(len(y),n_iter=5,test_size=0.2)
+    cv = cross_validation.ShuffleSplit(len(y),n_iter=2,test_size=0.2)
 
 
     for num_fold,(train_index,test_index) in enumerate(cv):
@@ -156,6 +150,6 @@ if __name__=='__main__':
         os.mkdir('results')
     # sys.stdout = open(join('.','results',exp_num+'.log'), 'w')
 
-    path = join('..', 'meg_data',exp_num)
+    path = join('..', 'meg_data1',exp_num)
     target_data, nontarget_data = get_data(path)
     cv_score(target_data,nontarget_data)
