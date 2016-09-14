@@ -15,7 +15,7 @@ import sys
 
 
 
-def calc_cluster_mask(X,y,freqs):
+def calc_cluster_mask(X,y):
         def calc_threshold(p_thresh,n_samples_per_group):
             from scipy import stats
             ppf = stats.f.ppf
@@ -37,9 +37,8 @@ def calc_cluster_mask(X,y,freqs):
         freq_number = X.shape[3]
 
         cluster_threshold = 0.2
-        step = freqs[1]-freqs[0]
         for freq_index in xrange(freq_number):
-            print('Clustering frequency number %f: freq %f, step %f\n' %(freq_index,freqs[freq_index],step))
+            print('Clustering frequency number %f: freq %f, step %f\n' %(freq_index))
             data=[target_data[:,:,:,freq_index],nontarget_data[:,:,:,freq_index]]
             T_obs, clusters, cluster_p_values, H0 = \
                     permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,

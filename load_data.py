@@ -38,6 +38,7 @@ def get_data(path):
 def tft(source,window_start,window_end,baseline_start,baseline_end):
     sfreq=1000 #Sampling freq 1000Hz
     freqs = np.arange(15, 25, 2)
+    print(freqs)
     res = np.zeros((source.shape[0],(window_end-window_start),source.shape[1],len(freqs)))
     for i in xrange(source.shape[0]):
         tf_magnitude = np.absolute(cwt_morlet(source[i,:,:window_end], sfreq, freqs, use_fft=True, n_cycles=3.0, zero_mean=True, decim=1))
