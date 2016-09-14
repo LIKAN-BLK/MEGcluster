@@ -14,5 +14,15 @@ def extract_grad_mat(path,gradiom_mask):
     data=loadmat(path)
     return (data['F'][gradiom_mask])[np.newaxis,...] #additional dimension for easier concatenation to 3d array in the future
 
+
+def get_data(path):
+    path_to_target = join(path, 'SI')
+    path_to_nontarget = join(path, 'error')
+    target_data = load_data(path_to_target)
+    nontarget_data = load_data(path_to_nontarget)
+    return target_data, nontarget_data
+
+
+
 if __name__== '__main__':
     print('It\'s fun!')
