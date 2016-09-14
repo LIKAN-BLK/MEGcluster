@@ -3,7 +3,6 @@ import numpy as np
 from sklearn import cross_validation
 from mne.channels import read_ch_connectivity
 from mne.stats import permutation_cluster_test
-from mne.time_frequency import cwt_morlet
 
 import my_pipeline
 from sklearn.decomposition import RandomizedPCA
@@ -96,7 +95,7 @@ def cv_score(target_data,nontarget_data):
         my_clf_list.append(my_pipeline.My_pipeline(name,object[0],object[1]))
 
 
-    source = np.concatenate((target_data,nontarget_data),axis=0)
+    X = np.concatenate((target_data,nontarget_data),axis=0)
     y = np.hstack((np.ones(target_data.shape[0]),np.zeros(nontarget_data.shape[0])))
 
 
@@ -111,7 +110,7 @@ def cv_score(target_data,nontarget_data):
         Xtest = X[test_index,:,:,:]
         ytest = y[test_index]
 
-        cluster_mask = calc_cluster_mask(Xtrain,ytrain,freqs)
+        cluster_mask = calc_cluster_mask(Xtrain,ytrain)
 
         if (cluster_mask.size != 0) & (cluster_mask.any()):
             [v.fit(cluster_mask,Xtrain,ytrain) for v in my_clf_list]
@@ -165,8 +164,8 @@ if __name__=='__main__':
     print(exp_num)
     if not os.path.isdir('results'):
         os.mkdir('results')
-    # sys.stdout = open(os.path.join('.','results',exp_num+'.log'), 'w')
+    sys.stdout = open(os.path.join('.','results',exp_num+'.log'), 'w')
 
-    path = os.path.join('..', 'meg_data',exp_num)
+    path = os.path.join('..', 'meg_data1',exp_num)
     target_data, nontarget_data = get_data(path)
     cv_score(target_data,nontarget_data)
