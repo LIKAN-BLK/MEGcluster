@@ -38,7 +38,7 @@ def calc_cluster_mask(X,y):
 
         cluster_threshold = 0.2
         for freq_index in xrange(freq_number):
-            print('Clustering frequency number %f: freq %f, step %f\n' %(freq_index))
+            print('Clustering frequency number %f\n' %(freq_index))
             data=[target_data[:,:,:,freq_index],nontarget_data[:,:,:,freq_index]]
             T_obs, clusters, cluster_p_values, H0 = \
                     permutation_cluster_test(data, n_permutations=1500, connectivity=connectivity[0], check_disjoint=True, tail=0,
