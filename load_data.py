@@ -16,15 +16,15 @@ def extract_grad_mat(path,gradiom_mask):
 
 
 def get_data(path):
-    #data_start_time = -1000
+    #data_start_time = -820
     #fixation_time = -180
     #baseline -1000:-500
     #window -80:320 ms
 
-    window_start = -80-(-1000)
+    window_start = 920 #100ms after fuxation
     window_end = window_start+400
-    baseline_start = 0
-    baseline_end = 300
+    baseline_start = 100
+    baseline_end = baseline_start+300
 
     path_to_target = join(path, 'SI')
     path_to_nontarget = join(path, 'error')
@@ -41,7 +41,7 @@ def tft(source,window_start,window_end,baseline_start,baseline_end):
     print(freqs)
     res = np.zeros((source.shape[0],(window_end-window_start),source.shape[1],len(freqs)))
     for i in xrange(source.shape[0]):
-        tf_magnitude = np.absolute(cwt_morlet(source[i,:,:window_end], sfreq, freqs, use_fft=True, n_cycles=3.0, zero_mean=True, decim=1))
+        tf_magnitude = np.absolute(cwt_morlet(source[i,:,:window_end], sfreq, freqs, use_fft=True, n_cycles=5.0, zero_mean=True, decim=1))
         tf_magnitude_baseline = tf_magnitude[:,:,baseline_start:baseline_end].mean(axis=2)
         tf_magnitude = tf_magnitude[:,:,window_start:]
         tf_magnitude = np.log10(tf_magnitude) - np.log10(np.tile(tf_magnitude_baseline[:,:,np.newaxis],(1,1,tf_magnitude.shape[2])))

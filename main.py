@@ -63,7 +63,7 @@ def cv_score(target_data,nontarget_data):
     #Cluster methods (now one correct and one empty)
 
     # Pool of dimension reduction methods
-    svd = RandomizedPCA(n_components = 160,whiten=True)
+    svd = RandomizedPCA(n_components = 80,whiten=True)
 
 
     # Pool of classifier methods
