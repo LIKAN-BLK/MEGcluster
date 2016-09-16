@@ -41,7 +41,7 @@ def tft(source,window_start,window_end,baseline_start,baseline_end):
     print(freqs)
     res = np.zeros((source.shape[0],(window_end-window_start),source.shape[1],len(freqs)))
     for i in xrange(source.shape[0]):
-        tf_magnitude = np.absolute(cwt_morlet(source[i,:,:window_end], sfreq, freqs, use_fft=True, n_cycles=5.0, zero_mean=True, decim=1))
+        tf_magnitude = np.absolute(cwt_morlet(source[i,:,:window_end], sfreq, freqs, use_fft=True, n_cycles=10.0, zero_mean=True, decim=1))
         tf_magnitude_baseline = tf_magnitude[:,:,baseline_start:baseline_end].mean(axis=2)
         tf_magnitude = tf_magnitude[:,:,window_start:]
         tf_magnitude = np.log10(tf_magnitude) - np.log10(np.tile(tf_magnitude_baseline[:,:,np.newaxis],(1,1,tf_magnitude.shape[2])))
