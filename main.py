@@ -1,4 +1,4 @@
-from load_data import load_data
+from load_data import get_data
 from mne.channels import read_ch_connectivity
 from mne.stats import permutation_cluster_test
 import matplotlib.pyplot as plt
@@ -11,20 +11,32 @@ from sklearn.metrics import roc_auc_score
 from sklearn.svm import SVC
 
 
-def get_data(path):
-    path_to_target = join(path, 'SI')
-    path_to_nontarget = join(path, 'error')
-    target_data = load_data(path_to_target)
-    nontarget_data = load_data(path_to_nontarget)
-    return target_data, nontarget_data
 
-def calc_cluster_mask(target_data, nontarget_data):
-    connectivity = read_ch_connectivity('neuromag306planar_neighb.mat', picks=None)
-    X = [target_data, nontarget_data]
-    T_obs, clusters, cluster_p_values, H0 = \
-        permutation_cluster_test(X, n_permutations=1000, connectivity=connectivity[0], check_disjoint=True, tail=0,
-                                 n_jobs=8,verbose=True)
-    return clusters[np.argmin(cluster_p_values)]
+connectivity = read_ch_connectivity('neuromag306planar_neighb.mat', picks=None)
+
+def calc_cluster_mask(X,y):
+        p_threshold = 0.000005 #Magic
+
+        def calc_threshold(p_thresh,n_samples_per_group):
+            from scipy import stats
+            ppf = stats.f.ppf
+            p_thresh = p_thresh / 2 # Two tailed
+            threshold = ppf(1. - p_thresh, *n_samples_per_group)
+            print('P threshold =%f, F threshold = %f' %(p_thresh*2,threshold) )
+            return threshold
+
+        threshold = calc_threshold(p_threshold,[sum(y==1),sum(y==0)])
+        data = [X[y == 1,:,:], X[y == 0,:,:]]
+        T_obs, clusters, cluster_p_values, H0 = \
+                permutation_cluster_test(data, n_permutations=1000, connectivity=connectivity[0], check_disjoint=True, tail=0,
+                                 threshold=threshold,n_jobs=4,verbose=False)
+        cluster_threshold = 0.2
+        print('Found clusters lower p=%f' %cluster_threshold)
+        for ind_cl, cl in enumerate(clusters):
+            if cluster_p_values[ind_cl] < cluster_threshold:
+                print cluster_p_values[ind_cl],cl.sum()
+        return reduce(lambda res,x:res | x,[cl for ind_cl,cl in enumerate(clusters) if cluster_p_values[ind_cl]<cluster_threshold])
+        # clusters[np.argmin(cluster_p_values)]
 
 def apply_cluster_mask(data,mask):
     #due to geometry troubles returns data in 2d shape (trials x features)
@@ -32,10 +44,18 @@ def apply_cluster_mask(data,mask):
     data=data.reshape(data.shape[0],data.shape[1] * data.shape[2])[:,np.nonzero(linear_mask)[0]]
     return data
 
+def feature_extraction_with_cluster(Xtrain,ytrain,Xtest,ytest):
 
+     cluster_mask = calc_cluster_mask(Xtrain,ytrain)
+     Xtrain = apply_cluster_mask(Xtrain, cluster_mask)
+     effective_pca_num = 80
+     pca = PCA(n_components=effective_pca_num,whiten = True)
+     Xtrain = pca.fit_transform(Xtrain)
+     Xtest = apply_cluster_mask(Xtest, cluster_mask)
+     Xtest=pca.transform(Xtest)
+     return Xtrain,Xtest
 
 def cv_score(target_data,nontarget_data):
-
 
     eigen_lda=LinearDiscriminantAnalysis(solver='eigen',shrinkage='auto')
     lsqr_lda=LinearDiscriminantAnalysis(solver='lsqr',shrinkage='auto')
@@ -56,23 +76,10 @@ def cv_score(target_data,nontarget_data):
 
         Xtest = X[test_index,:,:]
         ytest = y[test_index]
-
-        cluster_mask = calc_cluster_mask(Xtrain[ytrain == 1,:,:], Xtrain[ytrain == 0,:,:])
-        Xtrain = apply_cluster_mask(Xtrain, cluster_mask)
-
-
-        pca = PCA(whiten =True)
-        pca.fit(Xtrain)
-        # effective_pca_num = sum(pca.explained_variance_ratio_>5e-3)
-        effective_pca_num = 60
-        Xtrain = pca.transform(Xtrain)[:,:effective_pca_num]
-        print('Real num components = %d' %(Xtrain.shape[1]))
+        Xtrain,Xtest = feature_extraction_with_cluster(Xtrain,ytrain,Xtest,ytest)
 
         fit_clf = lambda clf: clf.fit(Xtrain,ytrain)
         {fit_clf(v) for k,v in clf_dict.items()}
-
-        Xtest = apply_cluster_mask(Xtest, cluster_mask)
-        Xtest = pca.transform(Xtest)[:,:effective_pca_num]
 
         calc_auc = lambda clf:roc_auc_score(ytest, clf.predict_proba(Xtest)[:,1], average='macro')
         auc_dict = {k:np.append(v,calc_auc(clf_dict[k])) for k,v in auc_dict.items()}
@@ -81,8 +88,10 @@ def cv_score(target_data,nontarget_data):
     print auc_dict
 
 if __name__=='__main__':
-    path = join('..', 'meg_data','em06')
-    target_data, nontarget_data = get_data(path)
+    path = join('..', 'meg_data1','em06')
+    target_data, nontarget_data = get_data(path,'MEG GRAD')
+    target_data = target_data[0:75,:]
+    nontarget_data = nontarget_data[0:75,:]
 
     cv_score(target_data,nontarget_data)
 
