@@ -9,7 +9,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn import cross_validation
 from sklearn.metrics import roc_auc_score
 from sklearn.svm import SVC
-
+from scipy.stats import zscore
 
 
 connectivity = read_ch_connectivity('neuromag306planar_neighb.mat', picks=None)
@@ -55,7 +55,17 @@ def feature_extraction_with_cluster(Xtrain,ytrain,Xtest,ytest):
      Xtest=pca.transform(Xtest)
      return Xtrain,Xtest
 
-def cv_score(target_data,nontarget_data):
+def feature_extraction_no_cluster(Xtrain,ytrain,Xtest,ytest):
+     effective_pca_num = 80
+     pca = PCA(n_components=effective_pca_num,whiten = True)
+     Xtrain = Xtrain.reshape(Xtrain.shape[0],-1)
+     Xtrain = pca.fit_transform(Xtrain)
+
+     Xtest = Xtest.reshape(Xtest.shape[0],-1)
+     Xtest = pca.transform(Xtest)
+     return Xtrain,Xtest
+
+def cv_score(target_grad_data,nontarget_grad_data,target_mag_data,nontarget_mag_data):
 
     eigen_lda=LinearDiscriminantAnalysis(solver='eigen',shrinkage='auto')
     lsqr_lda=LinearDiscriminantAnalysis(solver='lsqr',shrinkage='auto')
@@ -67,16 +77,25 @@ def cv_score(target_data,nontarget_data):
     clf_dict = {'eigen_lda':eigen_lda,'lsqr_lda':lsqr_lda,'svd_lda':svd_lda,'C1_lin_svm':C1_lin_svm,'C1_rbf_svm':C1_rbf_svm,'C0_5_lin_svm':C0_5_lin_svm,'C0_5_rbf_svm':C0_5_rbf_svm}
     auc_dict = {'eigen_lda':np.array([]),'lsqr_lda':np.array([]),'svd_lda':np.array([]),'C1_lin_svm':np.array([]),'C1_rbf_svm':np.array([]),'C0_5_lin_svm':np.array([]),'C0_5_rbf_svm':np.array([])}
 
-    X=np.concatenate((target_data,nontarget_data),axis=0)
-    y=np.concatenate([np.ones(target_data.shape[0]),np.zeros(target_data.shape[0])])
+    X_grad = np.concatenate((target_grad_data,nontarget_grad_data),axis=0)
+    X_mag = np.concatenate((target_mag_data,nontarget_mag_data),axis=0)
+
+    y=np.concatenate([np.ones(target_grad_data.shape[0]),np.zeros(nontarget_grad_data.shape[0])])
     cv = cross_validation.ShuffleSplit(len(y),n_iter=2,test_size=0.2)
     for train_index,test_index in cv:
-        Xtrain = X[train_index, :,:]
+        X_grad_train = X_grad[train_index, :,:]
+        X_mag_train = X_mag[train_index, :,:]
+
         ytrain = y[train_index]
 
-        Xtest = X[test_index,:,:]
+        X_grad_test = X_grad[test_index,:,:]
+        X_mag_test = X_mag[test_index,:,:]
+
         ytest = y[test_index]
-        Xtrain,Xtest = feature_extraction_with_cluster(Xtrain,ytrain,Xtest,ytest)
+
+        X_grad_train,X_grad_test = feature_extraction_no_cluster(X_grad_train,ytrain,X_grad_test,ytest)
+        X_mag_train,X_mag_test = feature_extraction_no_cluster(X_mag_train,ytrain,X_mag_test,ytest)
+
 
         fit_clf = lambda clf: clf.fit(Xtrain,ytrain)
         {fit_clf(v) for k,v in clf_dict.items()}
@@ -89,9 +108,13 @@ def cv_score(target_data,nontarget_data):
 
 if __name__=='__main__':
     path = join('..', 'meg_data1','em06')
-    target_data, nontarget_data = get_data(path,'MEG GRAD')
-    target_data = target_data[0:75,:]
-    nontarget_data = nontarget_data[0:75,:]
+    target_grad_data, nontarget_grad_data = get_data(path,'MEG GRAD')
+    target_grad_data = target_grad_data[0:75,:]
+    nontarget_grad_data = nontarget_grad_data[0:75,:]
 
-    cv_score(target_data,nontarget_data)
+    target_mag_data, nontarget_mag_data = get_data(path,'MEG MAG')
+    target_mag_data = target_mag_data[0:75,:]
+    nontarget_mag_data = nontarget_mag_data[0:75,:]
+
+    cv_score(target_grad_data,nontarget_grad_data,target_mag_data,nontarget_mag_data)
 
