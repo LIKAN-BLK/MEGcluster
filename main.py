@@ -54,19 +54,19 @@ import sys
 #      Xtest=pca.transform(Xtest)
 #      return Xtrain,Xtest
 
-def feature_extraction_no_cluster(X_grad_train,X_grad_test,X_mag_train,X_mag_test):
+def feature_extraction_fullPCA(X_grad_train,X_grad_test,X_mag_train,X_mag_test):
     #Function calculates z-score for each feature (by using mean and variance for this feature in all trials),
-    #then concatenates gradiometers and magnitometers and calculates first N principal components
+    #then concatenates gradiometers and magnitometers and calculates first N principal components on whole dataset
 
     from sklearn.preprocessing import StandardScaler
 
     def flat_n_standartize(Xtrain,Xtest):
         # Flatten times x channels arrays and calc z-score
         Xtrain = Xtrain.reshape(Xtrain.shape[0],-1) #flatten array n_samples x n_time x n_channels to n_samples x n_features
-        Xtest = Xtest.reshape(Xtest.shape[0],-1)
+        Xtest = Xtest.reshape(Xtest.shape[0],-1)    #Gradiometers (~10^-3) and magnitiometers(~10^-6) have different scale and because we will process them with PCA together we have to make them
+        # same scale
         scaler = StandardScaler().fit(Xtrain)
         return scaler.transform(Xtrain),scaler.transform(Xtest)
-
     X_grad_train,X_grad_test = flat_n_standartize(X_grad_train,X_grad_test)
     X_mag_train,X_mag_test = flat_n_standartize(X_mag_train,X_mag_test)
 
@@ -76,8 +76,35 @@ def feature_extraction_no_cluster(X_grad_train,X_grad_test,X_mag_train,X_mag_tes
     pca = PCA(n_components=effective_pca_num,whiten = True)
     Xtrain = pca.fit_transform(np.hstack((X_grad_train,X_mag_train)))
     Xtest = pca.transform(np.hstack((X_grad_test,X_mag_test)))
-
     return Xtrain,Xtest
+
+def feature_extraction_partialPCA(X_grad_train,X_grad_test,X_mag_train,X_mag_test):
+    #Function flatten data, calculates PCA on data from each sensor (grad & magn) type separately
+    #then
+    #TODO standartise data after pca (BEFORE DOING THIS CHECK, necessity of post PCA standartisation)
+
+
+
+    def flat_n_standartize(Xtrain,Xtest):
+        # Flatten times x channels arrays and calc z-score
+        Xtrain = Xtrain.reshape(Xtrain.shape[0],-1) #flatten array n_samples x n_time x n_channels to n_samples x n_features
+        Xtest = Xtest.reshape(Xtest.shape[0],-1)
+        return Xtrain,Xtest #Data with same sensor type have same scale 
+    X_grad_train,X_grad_test = flat_n_standartize(X_grad_train,X_grad_test)
+    X_mag_train,X_mag_test = flat_n_standartize(X_mag_train,X_mag_test)
+
+    effective_pca_num = 40 # PCA components
+
+    # Whitening scales variance to unit, without this svm would not work
+    pca = PCA(n_components=effective_pca_num,whiten = True)
+    X_grad_train=pca.fit_transform(X_grad_train)
+    X_grad_test=pca.transform(X_grad_test)
+
+    X_mag_train= pca.fit_transform(X_mag_train)
+    X_mag_test=pca.transform(X_mag_test)
+    return np.hstack((X_grad_train,X_mag_train)), np.hstack((X_grad_test,X_mag_test))
+    # return Xtrain,Xtest
+
 
 def cv_score(target_grad_data,nontarget_grad_data,target_mag_data,nontarget_mag_data):
 
