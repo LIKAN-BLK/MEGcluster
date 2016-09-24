@@ -50,13 +50,20 @@ def get_data(path,sensor_type):
 
     window_start = 920
     window_end = window_start+400
-    baseline_start = window_start+200
-    baseline_end = window_start+300
+    baseline_start = window_start
+    baseline_end = window_start+200
 
     path_to_target = join(path, 'SI')
     path_to_nontarget = join(path, 'error')
     target_data = load_data(path_to_target,sensor_type) # trials x time x channel
     nontarget_data = load_data(path_to_nontarget,sensor_type)
+
+
+    order = 6
+    fs = 1000.0       # sample rate, Hz
+    cutoff = 25  # desired cutoff frequency of the filter, Hz
+    target_data = butter_lowpass_filter(target_data, cutoff, fs, order)
+    nontarget_data = butter_lowpass_filter(nontarget_data, cutoff, fs, order)
 
     target_data = extract_window_n_baseline(target_data,window_start,window_end,baseline_start,baseline_end)
     nontarget_data = extract_window_n_baseline(nontarget_data,window_start,window_end,baseline_start,baseline_end)
