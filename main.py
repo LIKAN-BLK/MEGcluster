@@ -1,7 +1,7 @@
 from load_data import get_data
 # from mne.channels import read_ch_connectivity
 # from mne.stats import permutation_cluster_test
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from os.path import join
 import numpy as np
 from sklearn.decomposition import PCA
@@ -79,16 +79,17 @@ def feature_extraction_fullPCA(X_grad_train,X_grad_test,X_mag_train,X_mag_test):
     return Xtrain,Xtest
 
 def feature_extraction_partialPCA(X_grad_train,X_grad_test,X_mag_train,X_mag_test):
-    #Function flatten data, calculates PCA on data from each sensor (grad & magn) type separately
-    #then
-    #TODO standartise data after pca (BEFORE DOING THIS CHECK, necessity of post PCA standartisation)
+    #Function flatten data, then center them and calculates PCA on data from each sensor (grad & magn) type separately
+    #then standartise them (z-score)
 
-
-
+    from sklearn.preprocessing import StandardScaler
     def flat_n_standartize(Xtrain,Xtest):
         # Flatten times x channels arrays and calc z-score
         Xtrain = Xtrain.reshape(Xtrain.shape[0],-1) #flatten array n_samples x n_time x n_channels to n_samples x n_features
+        mean = Xtrain.mean(axis=0)
+        Xtrain = Xtrain - mean
         Xtest = Xtest.reshape(Xtest.shape[0],-1)
+        Xtest = Xtest - mean
         return Xtrain,Xtest #Data with same sensor type have same scale 
     X_grad_train,X_grad_test = flat_n_standartize(X_grad_train,X_grad_test)
     X_mag_train,X_mag_test = flat_n_standartize(X_mag_train,X_mag_test)
@@ -102,8 +103,11 @@ def feature_extraction_partialPCA(X_grad_train,X_grad_test,X_mag_train,X_mag_tes
 
     X_mag_train= pca.fit_transform(X_mag_train)
     X_mag_test=pca.transform(X_mag_test)
-    return np.hstack((X_grad_train,X_mag_train)), np.hstack((X_grad_test,X_mag_test))
-    # return Xtrain,Xtest
+    Xtrain = np.hstack((X_grad_train,X_mag_train))
+    Xtest = np.hstack((X_grad_test,X_mag_test))
+
+    scaler = StandardScaler().fit(Xtrain)
+    return scaler.transform(Xtrain),scaler.transform(Xtest)
 
 
 def cv_score(target_grad_data,nontarget_grad_data,target_mag_data,nontarget_mag_data):
@@ -147,7 +151,7 @@ def cv_score(target_grad_data,nontarget_grad_data,target_mag_data,nontarget_mag_
 
         ytest = y[test_index]
 
-        Xtrain,Xtest = feature_extraction_no_cluster(X_grad_train,X_grad_test,X_mag_train,X_mag_test)
+        Xtrain,Xtest = feature_extraction_fullPCA(X_grad_train,X_grad_test,X_mag_train,X_mag_test)
 
         # Lambda expression to train each classifier in dict of classifiers
         fit_clf = lambda clf: clf.fit(Xtrain,ytrain)
@@ -176,8 +180,13 @@ if __name__=='__main__':
 
     #Loading data
     target_grad_data, nontarget_grad_data = get_data(path,'MEG GRAD')
+    # mean(intertrial) oscilates near 10^(-12)
+    # variance differ from 10^(-21) to 10^(-22)
+    # (mean variance between time x space points 10^(-21)
     target_mag_data, nontarget_mag_data = get_data(path,'MEG MAG')
-
+    # mean(intertrial) oscilates near 10^(-13) and 10^(-14)
+    #variance differ from 10^(-23) to 10^(-24)
+    # (mean variance between time x space points 10^(-24)
     #Run crossvalidation
     cv_score(target_grad_data,nontarget_grad_data,target_mag_data,nontarget_mag_data)
 
